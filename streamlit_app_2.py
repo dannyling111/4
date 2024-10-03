@@ -11,13 +11,21 @@ import os
 import re
 import streamlit as st
 from requests.exceptions import MissingSchema
+import google.generativeai as genai
 
 # Load the API key from Streamlit secrets
 api_key = st.secrets["api_keys"]["my_api_key"]
 
+# Configure Gemini API
+gemini_api_key = st.secrets["api_keys"]["gemini_api_key"]
+genai.configure(api_key=gemini_api_key)
+
+# Gemini bot names
+gemini_bots = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-1.0-pro"]
+
 # Select bot models from available options
-image_bots = ["DALL-E-3","FLUX-pro"]
-text_bots = ["GPT-3.5-Turbo", "GPT-4", "Claude-3-Opus"]
+image_bots = ["DALL-E-3", "FLUX-pro"]
+text_bots = ["GPT-3.5-Turbo", "GPT-4", "Claude-3-Opus"] + gemini_bots
 bot_models = text_bots + image_bots
 
 # List of painting styles
@@ -97,15 +105,27 @@ if st.button("生成文本"):
             message = ProtocolMessage(role="user", content=input_text_prompt)
             reply = ""
 
-            # Handling text generation for regular models like GPT
-            async for partial in get_bot_response(messages=[message], bot_name=selected_text_model, api_key=api_key):
-                response = json.loads(partial.raw_response["text"])
-                reply += response["text"]
+            # If Gemini bot is selected, use Gemini-specific API
+            if selected_text_model in gemini_bots:
+                try:
+                    model = genai.GenerativeModel(selected_text_model)
+                    response = model.generate_content(message.content)
+                    reply = response.text
+                except Exception as e:
+                    st.error(f"Error getting response from Gemini: {str(e)}")
+                    return None
+            else:
+                # Handling text generation for regular models like GPT
+                async for partial in get_bot_response(messages=[message], bot_name=selected_text_model, api_key=api_key):
+                    response = json.loads(partial.raw_response["text"])
+                    reply += response["text"]
+
             return reply
 
         # Running the async function to get the text response
         text_response = asyncio.run(fetch_text_response())
 
         # Display the text response
-        st.success("生成的文本：")
-        st.write(text_response)
+        if text_response:
+            st.success("生成的文本：")
+            st.write(text_response)
