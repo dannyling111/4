@@ -108,16 +108,20 @@ elif page == "文本生成":
     # Dropdown for selecting text bot model
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
 
+    # Construct the message content by appending selected options only if not empty
+    message_content = input_text_prompt
+    if selected_language:  # Append 'Language' only if it's not empty
+        message_content += f"\nLanguage: {selected_language}"
+    if selected_thinking:  # Append 'Thinking' only if it's not empty
+        message_content += f"\nThinking: {selected_thinking}"
+
+    # Display the final prompt input for user review
+    st.subheader("AI 生成的最终提示词：")
+    st.write(f"**Prompt Input:**\n{message_content}")
+
     # Button for generating the text
     if st.button("生成文本"):
         with st.spinner("正在生成文本..."):
-            
-            # Prepare the message content by appending selected options only if not empty
-            message_content = input_text_prompt
-            if selected_language:  # Append 'Language' only if it's not empty
-                message_content += f"\nLanguage: {selected_language}"
-            if selected_thinking:  # Append 'Thinking' only if it's not empty
-                message_content += f"\nThinking: {selected_thinking}"
 
             async def fetch_text_response():
                 message = ProtocolMessage(role="user", content=message_content)
@@ -142,4 +146,5 @@ elif page == "文本生成":
             if text_response:
                 st.success("生成的文本：")
                 st.write(text_response)
+
 
