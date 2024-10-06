@@ -105,6 +105,10 @@ elif page == "文本生成":
     selected_language = st.selectbox("选择语言", language_options)
     selected_thinking = st.selectbox("选择思维方式", thinking_options)
 
+    # Multi-select for 'a3' items (with default as unselected)
+    a3_options = aisettings_df['a3'].dropna().tolist()  # Assuming 'a3' exists in the CSV
+    selected_a3_items = st.multiselect("选择附加项 (a3 列)", a3_options, default=[])
+
     # Dropdown for selecting text bot model
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
 
@@ -114,6 +118,9 @@ elif page == "文本生成":
         message_content += f"\nLanguage: {selected_language}"
     if selected_thinking:  # Append 'Thinking' only if it's not empty
         message_content += f"\nThinking: {selected_thinking}"
+    if selected_a3_items:  # Append 'a3' items if any are selected
+        a3_string = ', '.join(selected_a3_items)
+        message_content += f"\nAdditional: {a3_string}"
 
     # Display the final prompt input for user review
     st.subheader("AI 生成的最终提示词：")
@@ -146,5 +153,6 @@ elif page == "文本生成":
             if text_response:
                 st.success("生成的文本：")
                 st.write(text_response)
+
 
 
