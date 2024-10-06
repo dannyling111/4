@@ -98,7 +98,10 @@ elif page == "文本生成":
     # Text input for user prompt for text generation
     input_text_prompt = st.text_input("请输入文本生成提示词")
 
-    # Dropdown for selecting 'Language' and 'Thinking' options
+    # Dropdown for selecting 'Language' and 'Thinking' options, with default empty option
+    language_options = [''] + aisettings_df['a1'].dropna().tolist()  # Add '' as the first option
+    thinking_options = [''] + aisettings_df['a2'].dropna().tolist()  # Add '' as the first option
+
     selected_language = st.selectbox("选择语言", language_options)
     selected_thinking = st.selectbox("选择思维方式", thinking_options)
 
@@ -108,9 +111,15 @@ elif page == "文本生成":
     # Button for generating the text
     if st.button("生成文本"):
         with st.spinner("正在生成文本..."):
+            
+            # Prepare the message content by appending selected options only if not empty
+            message_content = input_text_prompt
+            if selected_language:  # Append 'Language' only if it's not empty
+                message_content += f"\nLanguage: {selected_language}"
+            if selected_thinking:  # Append 'Thinking' only if it's not empty
+                message_content += f"\nThinking: {selected_thinking}"
 
             async def fetch_text_response():
-                message_content = f"{input_text_prompt}\nLanguage: {selected_language}\nThinking: {selected_thinking}"
                 message = ProtocolMessage(role="user", content=message_content)
                 reply = ""
 
@@ -133,3 +142,4 @@ elif page == "文本生成":
             if text_response:
                 st.success("生成的文本：")
                 st.write(text_response)
+
