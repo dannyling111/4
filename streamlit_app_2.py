@@ -36,6 +36,14 @@ painting_styles = ["", "油画", "水彩画", "水墨画", "素描", "丙烯画"
     "爱德华·马奈风格", "齐白石风格", "张大千风格", 
     "徐悲鸿风格", "吴冠中风格"]
 
+# Load CSV data for 'Language' and 'Thinking' from 'aisetting.csv'
+csv_path = "aisetting.csv"
+aisettings_df = pd.read_csv(csv_path)
+
+# Extract 'Language' and 'Thinking' options from columns 'a1' and 'a2'
+language_options = aisettings_df['a1'].dropna().tolist()
+thinking_options = aisettings_df['a2'].dropna().tolist()
+
 # Sidebar for navigation
 st.sidebar.title("导航")
 page = st.sidebar.selectbox("选择页面", ["图像生成", "文本生成"])
@@ -90,6 +98,10 @@ elif page == "文本生成":
     # Text input for user prompt for text generation
     input_text_prompt = st.text_input("请输入文本生成提示词")
 
+    # Dropdown for selecting 'Language' and 'Thinking' options
+    selected_language = st.selectbox("选择语言", language_options)
+    selected_thinking = st.selectbox("选择思维方式", thinking_options)
+
     # Dropdown for selecting text bot model
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
 
@@ -98,7 +110,8 @@ elif page == "文本生成":
         with st.spinner("正在生成文本..."):
 
             async def fetch_text_response():
-                message = ProtocolMessage(role="user", content=input_text_prompt)
+                message_content = f"{input_text_prompt}\nLanguage: {selected_language}\nThinking: {selected_thinking}"
+                message = ProtocolMessage(role="user", content=message_content)
                 reply = ""
 
                 if selected_text_model in gemini_bots:
