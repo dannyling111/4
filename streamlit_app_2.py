@@ -198,9 +198,18 @@ elif page == "词云生成":
 elif page == "关键词提取":
     st.header("关键词提取和搜索链接生成")
 
-   # Input box for the user to input the prompt
-    input_text_prompt = st.text_input("请输入文本生成提示词")
-    fixed_prompt_append = """
+   input_text_prompt = st.text_input("请输入文本生成提示词")
+
+    # Language selection
+    language_options = {
+        "中文": "Chinese",
+        "英文": "English",
+        "日文": "Japanese"
+    }
+    selected_language = st.selectbox("选择语言", list(language_options.keys()))
+
+    # Fixed prompt append for keyword generation with a sample format
+    fixed_prompt_append = f"""
     Provide a list of 20 most related keywords, in the following format:
 
     - Keyword 1
@@ -208,17 +217,14 @@ elif page == "关键词提取":
     - Keyword 3
     ...
 
-    Provide the result only in the list format as shown above.
+    Provide the result only in the list format as shown above. Respond in {language_options[selected_language]}.
     """
 
     # Bot selection (same as in other pages)
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
 
-    # Final prompt with the fixed text appended
+    # Final prompt with user input and fixed prompt
     final_prompt = f"{input_text_prompt}\n{fixed_prompt_append}"
-
-    st.subheader("生成提示词：")
-    st.write(f"**Prompt Input:**\n{final_prompt}")
 
     # Button to trigger text generation
     if st.button("生成关键词和链接"):
