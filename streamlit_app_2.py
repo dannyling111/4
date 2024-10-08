@@ -96,6 +96,61 @@ page = st.sidebar.selectbox("选择页面", ["图像生成", "文本生成", "�
 # Main header and description
 st.title("AI 图像、文本和词云生成器")
 
+if "recursive_results" not in st.session_state:
+    st.session_state["recursive_results"] = []
+
+# Function to generate keywords and links from a given input
+def generate_keywords_and_links(input_text):
+    fixed_prompt_append = f"""
+    Provide a list of 20 most related keywords, in the following format:
+
+    - Keyword 1
+    - Keyword 2
+    - Keyword 3
+    ...
+
+    Provide the result only in the list format as shown above. Respond in {language_options[selected_language]}.
+    """
+    final_prompt = f"{input_text}\n{fixed_prompt_append}"
+
+    async def fetch_text_response():
+        message = ProtocolMessage(role="user", content=final_prompt)
+        reply = ""
+        async for partial in get_bot_response(messages=[message], bot_name=selected_text_model, api_key=api_key):
+            response = json.loads(partial.raw_response["text"])
+            reply += response["text"]
+        return reply
+
+    # Fetch the AI response (expected in list format)
+    text_response = asyncio.run(fetch_text_response())
+    
+    if text_response:
+        try:
+            # Split the list by new lines and dashes (since AI will return a list in the format `- Keyword`)
+            keywords = [line.strip()[2:] for line in text_response.splitlines() if line.startswith("-")]
+            return keywords
+        except Exception as e:
+            st.error(f"处理关键词列表时出现错误: {str(e)}")
+            return []
+
+# Function to display keywords and links on the page with buttons
+def display_keywords_and_links(keywords):
+    for keyword in keywords:
+        google_search = f"https://www.google.com/search?q={keyword}"
+        youtube_search = f"https://www.youtube.com/results?search_query={keyword}"
+        
+        # Display keyword and links
+        st.markdown(f"- **{keyword}**: [Google Search]({google_search}) | [YouTube Search]({youtube_search})")
+        
+        # Add a button for each keyword to generate new keywords
+        if st.button(f"使用 '{keyword}' 生成新关键词", key=keyword):
+            new_keywords = generate_keywords_and_links(keyword)
+            if new_keywords:
+                st.session_state["recursive_results"].append({
+                    "input": keyword,
+                    "results": new_keywords
+                })
+
 if page == "图像生成":
     st.header("图像生成")
 
@@ -207,59 +262,18 @@ elif page == "关键词提取":
     }
     selected_language = st.selectbox("选择语言", list(language_options.keys()))
 
-    # Fixed prompt append for keyword generation with a sample format
-    fixed_prompt_append = f"""
-    Provide a list of 20 most related keywords, in the following format:
-
-    - Keyword 1
-    - Keyword 2
-    - Keyword 3
-    ...
-
-    Provide the result only in the list format as shown above. Respond in {language_options[selected_language]}.
-    """
-
     # Bot selection (same as in other pages)
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
-
-    # Final prompt with user input and fixed prompt
-    final_prompt = f"{input_text_prompt}\n{fixed_prompt_append}"
 
     # Button to trigger text generation
     if st.button("生成关键词和链接"):
         with st.spinner("正在生成关键词和链接..."):
+            # Generate initial keywords based on the input prompt
+            keywords = generate_keywords_and_links(input_text_prompt)
+            if keywords:
+                display_keywords_and_links(keywords)
 
-            async def fetch_text_response():
-                # Define the protocol message
-                message = ProtocolMessage(role="user", content=final_prompt)
-                reply = ""
-                
-                # Call the appropriate bot based on the user's selection
-                async for partial in get_bot_response(messages=[message], bot_name=selected_text_model, api_key=api_key):
-                    response = json.loads(partial.raw_response["text"])
-                    reply += response["text"]
-                return reply
-
-            # Fetch the AI response (expected in list format)
-            text_response = asyncio.run(fetch_text_response())
-
-            # Display the full AI output
-            st.subheader("AI 原始输出：")
-            st.write(text_response)  # Display raw AI response
-
-            if text_response:
-                try:
-                    # Split the list by new lines and dashes (since AI will return a list in the format `- Keyword`)
-                    keywords = [line.strip()[2:] for line in text_response.splitlines() if line.startswith("-")]
-
-                    st.subheader("关键词和搜索链接")
-
-                    # Display each keyword with clickable links
-                    for keyword in keywords:
-                        google_search = f"https://www.google.com/search?q={keyword}"
-                        youtube_search = f"https://www.youtube.com/results?search_query={keyword}"
-
-                        st.markdown(f"- **{keyword}**: [Google Search]({google_search}) | [YouTube Search]({youtube_search})")
-
-                except Exception as e:
-                    st.error(f"处理关键词列表时出现错误: {str(e)}")
+    # Display any recursive results
+    for result in st.session_state["recursive_results"]:
+        st.subheader(f"使用 '{result['input']}' 生成的新关键词")
+        display_keywords_and_links(result['results'])
