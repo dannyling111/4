@@ -198,9 +198,18 @@ elif page == "词云生成":
 elif page == "关键词提取":
     st.header("关键词提取和搜索链接生成")
 
-    # Input box for the user to input the prompt
+   # Input box for the user to input the prompt
     input_text_prompt = st.text_input("请输入文本生成提示词")
-    fixed_prompt_append = "provide 20 most related keywords, and provide in JSON format only."
+    fixed_prompt_append = """
+    Provide a list of 20 most related keywords, in the following format:
+
+    - Keyword 1
+    - Keyword 2
+    - Keyword 3
+    ...
+
+    Provide the result only in the list format as shown above.
+    """
 
     # Bot selection (same as in other pages)
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
@@ -226,7 +235,7 @@ elif page == "关键词提取":
                     reply += response["text"]
                 return reply
 
-            # Fetch the AI response (expected in JSON format)
+            # Fetch the AI response (expected in list format)
             text_response = asyncio.run(fetch_text_response())
 
             # Display the full AI output
@@ -234,27 +243,18 @@ elif page == "关键词提取":
             st.write(text_response)  # Display raw AI response
 
             if text_response:
-                # Assuming the response is a JSON string containing keywords
                 try:
-                    json_response = json.loads(text_response)  # Parse the JSON string
+                    # Split the list by new lines and dashes (since AI will return a list in the format `- Keyword`)
+                    keywords = [line.strip()[2:] for line in text_response.splitlines() if line.startswith("-")]
 
-                    if "keywords" in json_response:
-                        keywords = json_response["keywords"]
+                    st.subheader("关键词和搜索链接")
 
-                        st.subheader("关键词和搜索链接")
+                    # Display each keyword with clickable links
+                    for keyword in keywords:
+                        google_search = f"https://www.google.com/search?q={keyword}"
+                        youtube_search = f"https://www.youtube.com/results?search_query={keyword}"
 
-                        # Display each keyword with clickable links
-                        for keyword_entry in keywords:
-                            if "keyword" in keyword_entry and "google_search" in keyword_entry and "youtube_search" in keyword_entry:
-                                keyword = keyword_entry["keyword"]
-                                google_search = keyword_entry["google_search"]
-                                youtube_search = keyword_entry["youtube_search"]
+                        st.markdown(f"- **{keyword}**: [Google Search]({google_search}) | [YouTube Search]({youtube_search})")
 
-                                st.markdown(f"- **{keyword}**: [Google Search]({google_search}) | [YouTube Search]({youtube_search})")
-                            else:
-                                st.warning("关键词条目缺少必要字段。")
-
-                    else:
-                        st.error("无法找到 'keywords' 字段。请确保模型生成正确的JSON格式。")
-                except json.JSONDecodeError:
-                    st.error("生成的文本无法解析为JSON。请检查AI生成的响应。")
+                except Exception as e:
+                    st.error(f"处理关键词列表时出现错误: {str(e)}")
