@@ -156,7 +156,40 @@ def display_keywords_and_links(keywords, is_initial=False, context=""):
                     "results": new_keywords
                 })
 
-if page == "图像生成":
+if page == "关键词提取":
+    st.header("关键词提取和搜索链接生成")
+    input_text_prompt = st.text_input("请输入文本生成提示词")
+
+    # Language selection
+    language_options = {
+        "中文": "Chinese",
+        "英文": "English",
+        "日文": "Japanese"
+    }
+    selected_language = st.selectbox("选择语言", list(language_options.keys()))
+
+    # Bot selection (same as in other pages)
+    selected_text_model = st.selectbox("选择文本生成模型", text_bots)
+
+    # Button to trigger text generation
+    if st.button("生成关键词和链接"):
+        with st.spinner("正在生成关键词和链接..."):
+            # Generate initial keywords based on the input prompt
+            keywords = generate_keywords_and_links(input_text_prompt)
+            if keywords:
+                st.session_state["initial_keywords"] = keywords
+
+    # Display initial generated keywords if available
+    if st.session_state["initial_keywords"]:
+        st.subheader("初始关键词和搜索链接")
+        display_keywords_and_links(st.session_state["initial_keywords"], is_initial=True, context="initial")
+
+    # Display any recursive results
+    if st.session_state["recursive_results"]:
+        for idx, result in enumerate(st.session_state["recursive_results"]):
+            st.subheader(f"使用 '{result['input']}' 生成的新关键词")
+            display_keywords_and_links(result['results'], context=f"recursive_{idx}")
+elif page == "图像生成":
     st.header("图像生成")
 
     input_image_prompt = st.text_input("请输入图像生成提示词")
@@ -255,36 +288,4 @@ elif page == "词云生成":
                 google_news_link = f"https://news.google.com/search?q={keyword}"
                 youtube_link = f"https://www.youtube.com/results?search_query={keyword}"
                 st.markdown(f"- **{keyword}**: [Google Search]({google_search_link}) | [Google News]({google_news_link}) | [YouTube]({youtube_link})")
-elif page == "关键词提取":
-    st.header("关键词提取和搜索链接生成")
-    input_text_prompt = st.text_input("请输入文本生成提示词")
 
-    # Language selection
-    language_options = {
-        "中文": "Chinese",
-        "英文": "English",
-        "日文": "Japanese"
-    }
-    selected_language = st.selectbox("选择语言", list(language_options.keys()))
-
-    # Bot selection (same as in other pages)
-    selected_text_model = st.selectbox("选择文本生成模型", text_bots)
-
-    # Button to trigger text generation
-    if st.button("生成关键词和链接"):
-        with st.spinner("正在生成关键词和链接..."):
-            # Generate initial keywords based on the input prompt
-            keywords = generate_keywords_and_links(input_text_prompt)
-            if keywords:
-                st.session_state["initial_keywords"] = keywords
-
-    # Display initial generated keywords if available
-    if st.session_state["initial_keywords"]:
-        st.subheader("初始关键词和搜索链接")
-        display_keywords_and_links(st.session_state["initial_keywords"], is_initial=True, context="initial")
-
-    # Display any recursive results
-    if st.session_state["recursive_results"]:
-        for idx, result in enumerate(st.session_state["recursive_results"]):
-            st.subheader(f"使用 '{result['input']}' 生成的新关键词")
-            display_keywords_and_links(result['results'], context=f"recursive_{idx}")
