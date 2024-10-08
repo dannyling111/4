@@ -198,8 +198,7 @@ elif page == "词云生成":
 elif page == "关键词提取":
     st.header("关键词提取和搜索链接生成")
 
-    st.header("关键词提取和JSON生成")
-
+    # Input box for the user to input the prompt
     input_text_prompt = st.text_input("请输入文本生成提示词")
     fixed_prompt_append = "provide 20 most related keywords, and provide in JSON format only."
 
@@ -229,7 +228,11 @@ elif page == "关键词提取":
 
             # Fetch the AI response (expected in JSON format)
             text_response = asyncio.run(fetch_text_response())
-            
+
+            # Display the full AI output
+            st.subheader("AI 原始输出：")
+            st.write(text_response)  # Display raw AI response
+
             if text_response:
                 # Assuming the response is a JSON string containing keywords
                 try:
@@ -242,11 +245,14 @@ elif page == "关键词提取":
 
                         # Display each keyword with clickable links
                         for keyword_entry in keywords:
-                            keyword = keyword_entry["keyword"]
-                            google_search = keyword_entry["google_search"]
-                            youtube_search = keyword_entry["youtube_search"]
+                            if "keyword" in keyword_entry and "google_search" in keyword_entry and "youtube_search" in keyword_entry:
+                                keyword = keyword_entry["keyword"]
+                                google_search = keyword_entry["google_search"]
+                                youtube_search = keyword_entry["youtube_search"]
 
-                            st.markdown(f"- **{keyword}**: [Google Search]({google_search}) | [YouTube Search]({youtube_search})")
+                                st.markdown(f"- **{keyword}**: [Google Search]({google_search}) | [YouTube Search]({youtube_search})")
+                            else:
+                                st.warning("关键词条目缺少必要字段。")
 
                     else:
                         st.error("无法找到 'keywords' 字段。请确保模型生成正确的JSON格式。")
