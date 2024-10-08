@@ -137,16 +137,16 @@ def generate_keywords_and_links(input_text):
             return []
 
 # Function to display keywords and links on the page with buttons
-def display_keywords_and_links(keywords, is_initial=False):
-    for keyword in keywords:
+def display_keywords_and_links(keywords, is_initial=False, context=""):
+    for index, keyword in enumerate(keywords):
         google_search = f"https://www.google.com/search?q={keyword}"
         youtube_search = f"https://www.youtube.com/results?search_query={keyword}"
         
         # Display keyword and links
         st.markdown(f"- **{keyword}**: [Google Search]({google_search}) | [YouTube Search]({youtube_search})")
         
-        # Add a button for each keyword to generate new keywords
-        if st.button(f"使用 '{keyword}' 生成新关键词", key=f"{keyword}_{is_initial}"):
+        # Add a button for each keyword to generate new keywords, with a unique key
+        if st.button(f"使用 '{keyword}' 生成新关键词", key=f"{context}_{keyword}_{index}"):
             new_keywords = generate_keywords_and_links(keyword)
             if new_keywords:
                 # Store new results in session_state to keep them across rerenders
@@ -280,10 +280,10 @@ elif page == "关键词提取":
     # Display initial generated keywords if available
     if st.session_state["initial_keywords"]:
         st.subheader("初始关键词和搜索链接")
-        display_keywords_and_links(st.session_state["initial_keywords"], is_initial=True)
+        display_keywords_and_links(st.session_state["initial_keywords"], is_initial=True, context="initial")
 
     # Display any recursive results
     if st.session_state["recursive_results"]:
-        for result in st.session_state["recursive_results"]:
+        for idx, result in enumerate(st.session_state["recursive_results"]):
             st.subheader(f"使用 '{result['input']}' 生成的新关键词")
-            display_keywords_and_links(result['results'])
+            display_keywords_and_links(result['results'], context=f"recursive_{idx}")
