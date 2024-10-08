@@ -87,7 +87,7 @@ def generate_wordcloud(keywords):
     buf = BytesIO()
     plt.savefig(buf, format="png")
     buf.seek(0)
-    return buf
+    return buf, wordcloud.words_
 
 # Sidebar for navigation
 st.sidebar.title("导航")
@@ -181,12 +181,16 @@ elif page == "词云生成":
     if st.button("生成词云"):
         with st.spinner("正在生成词云..."):
             trend_keywords = get_google_trends()
-            wordcloud_image = generate_wordcloud(trend_keywords)
+            wordcloud_image, keyword_frequencies = generate_wordcloud(trend_keywords)
 
+            # Display the word cloud image
             st.image(wordcloud_image, caption="Google Trends 词云", use_column_width=True)
 
+            # Sort keywords by frequency and get the top 20
+            sorted_keywords = sorted(keyword_frequencies.items(), key=lambda x: x[1], reverse=True)[:20]
+
             st.subheader("关键词搜索链接")
-            for keyword in trend_keywords[:10]:  # Limit to top 10 for display
+            for keyword, _ in sorted_keywords:  # Display the top 20 keywords
                 google_news_link = f"https://news.google.com/search?q={keyword}"
                 youtube_link = f"https://www.youtube.com/results?search_query={keyword}"
                 st.markdown(f"- **{keyword}**: [Google News]({google_news_link}) | [YouTube]({youtube_link})")
