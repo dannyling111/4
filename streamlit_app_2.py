@@ -141,12 +141,13 @@ def display_keywords_and_links(keywords, is_initial=False, context=""):
     for index, keyword in enumerate(keywords):
         google_search = f"https://www.google.com/search?q={keyword}"
         youtube_search = f"https://www.youtube.com/results?search_query={keyword}"
+        bilibili_search = f"https://search.bilibili.com/all?keyword={keyword}"
         
         # Display keyword and links
-        st.markdown(f"- **{keyword}**: [Google Search]({google_search}) | [YouTube Search]({youtube_search})")
+        st.markdown(f"- **{keyword}**: [Google Search]({google_search}) | [YouTube Search]({youtube_search}) | [Bilibili Search]({bilibili_search})")
         
-        # Add a button for each keyword to generate new keywords, with a unique key
-        if st.button(f"使用 '{keyword}' 生成新关键词", key=f"{context}_{keyword}_{index}"):
+        # Add a general button to generate new keywords, with a unique key
+        if st.button("生成新关键词", key=f"{context}_{index}"):
             new_keywords = generate_keywords_and_links(keyword)
             if new_keywords:
                 # Store new results in session_state to keep them across rerenders
