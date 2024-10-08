@@ -34,7 +34,7 @@ gemini_bots = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-1.0-pro"]
 
 # Select bot models from available options
 image_bots = ["DALL-E-3", "FLUX-pro"]
-text_bots = ["GPT-3.5-Turbo", "GPT-4", "Claude-3-Opus"] + gemini_bots
+text_bots = gemini_bots+["GPT-3.5-Turbo", "GPT-4", "Claude-3-Opus"]
 bot_models = text_bots + image_bots
 
 # List of painting styles
