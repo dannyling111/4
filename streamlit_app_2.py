@@ -200,22 +200,21 @@ elif page == "关键词提取":
 
     st.header("关键词提取和JSON生成")
 
-    # Input box for the user to input prompt
     input_text_prompt = st.text_input("请输入文本生成提示词")
     fixed_prompt_append = "provide 20 most related keywords, and provide in JSON format only."
 
-    # Bot selection (same as other pages)
+    # Bot selection (same as in other pages)
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
 
-    # Final prompt with appended fixed text
+    # Final prompt with the fixed text appended
     final_prompt = f"{input_text_prompt}\n{fixed_prompt_append}"
 
     st.subheader("生成提示词：")
     st.write(f"**Prompt Input:**\n{final_prompt}")
 
     # Button to trigger text generation
-    if st.button("生成关键词和JSON"):
-        with st.spinner("正在生成关键词和JSON..."):
+    if st.button("生成关键词和链接"):
+        with st.spinner("正在生成关键词和链接..."):
 
             async def fetch_text_response():
                 # Define the protocol message
@@ -239,26 +238,16 @@ elif page == "关键词提取":
                     if "keywords" in json_response:
                         keywords = json_response["keywords"]
 
-                        # Generate search links for each keyword
-                        keyword_links = []
-                        for keyword in keywords:
-                            google_search = f"https://www.google.com/search?q={keyword}"
-                            youtube_search = f"https://www.youtube.com/results?search_query={keyword}"
-                            keyword_links.append({
-                                "keyword": keyword,
-                                "google_search": google_search,
-                                "youtube_search": youtube_search
-                            })
+                        st.subheader("关键词和搜索链接")
 
-                        # Output the result in JSON format
-                        result_json = json.dumps({"keywords": keyword_links}, ensure_ascii=False, indent=4)
-                        
-                        # Display the JSON result
-                        st.subheader("生成的关键词和链接 (JSON 格式)")
-                        st.code(result_json, language="json")
+                        # Display each keyword with clickable links
+                        for keyword_entry in keywords:
+                            keyword = keyword_entry["keyword"]
+                            google_search = keyword_entry["google_search"]
+                            youtube_search = keyword_entry["youtube_search"]
 
-                        # Provide a download button for the JSON file
-                        st.download_button("下载JSON", result_json, "keywords.json", "application/json")
+                            st.markdown(f"- **{keyword}**: [Google Search]({google_search}) | [YouTube Search]({youtube_search})")
+
                     else:
                         st.error("无法找到 'keywords' 字段。请确保模型生成正确的JSON格式。")
                 except json.JSONDecodeError:
