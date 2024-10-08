@@ -91,7 +91,7 @@ def generate_wordcloud(keywords):
 
 # Sidebar for navigation
 st.sidebar.title("导航")
-page = st.sidebar.selectbox("选择页面", ["图像生成", "文本生成", "词云生成", "关键词提取"])
+page = st.sidebar.selectbox("选择页面", [ "关键词提取", "词云生成","图像生成", "文本生成"])
 
 # Main header and description
 st.title("AI 图像、文本和词云生成器")
