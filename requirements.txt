@@ -1,8 +1,10 @@
 streamlit
 fastapi-poe
-requests  # If you're using requests for the API call
+requests
 google-generativeai
 docx
 pytrends
 wordcloud
 matplotlib
+pillow  # Required for handling images
+asyncio  # Needed for asynchronous tasks
