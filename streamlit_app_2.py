@@ -191,6 +191,7 @@ elif page == "词云生成":
 
             st.subheader("关键词搜索链接")
             for keyword, _ in sorted_keywords:  # Display the top 20 keywords
+                google_search_link = f"https://www.google.com/search?q={keyword}"
                 google_news_link = f"https://news.google.com/search?q={keyword}"
                 youtube_link = f"https://www.youtube.com/results?search_query={keyword}"
-                st.markdown(f"- **{keyword}**: [Google News]({google_news_link}) | [YouTube]({youtube_link})")
+                st.markdown(f"- **{keyword}**: [Google Search]({google_search_link}) | [Google News]({google_news_link}) | [YouTube]({youtube_link})")
