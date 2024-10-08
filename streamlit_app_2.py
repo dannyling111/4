@@ -197,8 +197,7 @@ elif page == "词云生成":
                 st.markdown(f"- **{keyword}**: [Google Search]({google_search_link}) | [Google News]({google_news_link}) | [YouTube]({youtube_link})")
 elif page == "关键词提取":
     st.header("关键词提取和搜索链接生成")
-
-   input_text_prompt = st.text_input("请输入文本生成提示词")
+    input_text_prompt = st.text_input("请输入文本生成提示词")
 
     # Language selection
     language_options = {
