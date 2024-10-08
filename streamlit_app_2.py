@@ -91,7 +91,7 @@ def generate_wordcloud(keywords):
 
 # Sidebar for navigation
 st.sidebar.title("导航")
-page = st.sidebar.selectbox("选择页面", ["图像生成", "文本生成", "词云生成"])
+page = st.sidebar.selectbox("选择页面", ["图像生成", "文本生成", "词云生成", "关键词提取"])
 
 # Main header and description
 st.title("AI 图像、文本和词云生成器")
@@ -195,3 +195,48 @@ elif page == "词云生成":
                 google_news_link = f"https://news.google.com/search?q={keyword}"
                 youtube_link = f"https://www.youtube.com/results?search_query={keyword}"
                 st.markdown(f"- **{keyword}**: [Google Search]({google_search_link}) | [Google News]({google_news_link}) | [YouTube]({youtube_link})")
+elif page == "关键词提取":
+    st.header("关键词提取和搜索链接生成")
+
+    # Input box for user to input requirements
+    input_requirements = st.text_input("请输入相关要求")
+
+    if st.button("生成关键词和链接"):
+        with st.spinner("正在生成关键词和链接..."):
+            # Function to extract the top 20 most important keywords
+            def extract_keywords(text):
+                # Example: This part should implement a keyword extraction algorithm or AI model
+                # For simplicity, we'll use simple word frequency or an AI model to get the keywords
+                words = text.split()  # Simple word splitting, replace with more advanced NLP
+                word_freq = Counter(words)
+                most_common_keywords = word_freq.most_common(20)  # Get top 20 keywords
+                return [word for word, freq in most_common_keywords]
+
+            # Generate search links for each keyword
+            def generate_search_links(keywords):
+                search_links = []
+                for keyword in keywords:
+                    google_search = f"https://www.google.com/search?q={keyword}"
+                    youtube_search = f"https://www.youtube.com/results?search_query={keyword}"
+                    search_links.append({
+                        "keyword": keyword,
+                        "google_search": google_search,
+                        "youtube_search": youtube_search
+                    })
+                return search_links
+
+            # Extract keywords from the input requirements
+            extracted_keywords = extract_keywords(input_requirements)
+
+            # Generate search links for each keyword
+            keyword_links = generate_search_links(extracted_keywords)
+
+            # Output the result in JSON format
+            result_json = json.dumps({"keywords": keyword_links}, ensure_ascii=False, indent=4)
+            
+            # Display the JSON result
+            st.subheader("生成的关键词和链接 (JSON 格式)")
+            st.code(result_json, language="json")
+
+            # Optionally, you can provide a download option for the JSON
+            st.download_button("下载JSON", result_json, "keywords.json", "application/json")
