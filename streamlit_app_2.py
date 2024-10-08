@@ -96,8 +96,11 @@ page = st.sidebar.selectbox("选择页面", ["图像生成", "文本生成", "�
 # Main header and description
 st.title("AI 图像、文本和词云生成器")
 
+# State to store initial and recursive results
 if "recursive_results" not in st.session_state:
     st.session_state["recursive_results"] = []
+if "initial_keywords" not in st.session_state:
+    st.session_state["initial_keywords"] = []
 
 # Function to generate keywords and links from a given input
 def generate_keywords_and_links(input_text):
@@ -134,7 +137,7 @@ def generate_keywords_and_links(input_text):
             return []
 
 # Function to display keywords and links on the page with buttons
-def display_keywords_and_links(keywords):
+def display_keywords_and_links(keywords, is_initial=False):
     for keyword in keywords:
         google_search = f"https://www.google.com/search?q={keyword}"
         youtube_search = f"https://www.youtube.com/results?search_query={keyword}"
@@ -143,9 +146,10 @@ def display_keywords_and_links(keywords):
         st.markdown(f"- **{keyword}**: [Google Search]({google_search}) | [YouTube Search]({youtube_search})")
         
         # Add a button for each keyword to generate new keywords
-        if st.button(f"使用 '{keyword}' 生成新关键词", key=keyword):
+        if st.button(f"使用 '{keyword}' 生成新关键词", key=f"{keyword}_{is_initial}"):
             new_keywords = generate_keywords_and_links(keyword)
             if new_keywords:
+                # Store new results in session_state to keep them across rerenders
                 st.session_state["recursive_results"].append({
                     "input": keyword,
                     "results": new_keywords
@@ -271,9 +275,15 @@ elif page == "关键词提取":
             # Generate initial keywords based on the input prompt
             keywords = generate_keywords_and_links(input_text_prompt)
             if keywords:
-                display_keywords_and_links(keywords)
+                st.session_state["initial_keywords"] = keywords
+
+    # Display initial generated keywords if available
+    if st.session_state["initial_keywords"]:
+        st.subheader("初始关键词和搜索链接")
+        display_keywords_and_links(st.session_state["initial_keywords"], is_initial=True)
 
     # Display any recursive results
-    for result in st.session_state["recursive_results"]:
-        st.subheader(f"使用 '{result['input']}' 生成的新关键词")
-        display_keywords_and_links(result['results'])
+    if st.session_state["recursive_results"]:
+        for result in st.session_state["recursive_results"]:
+            st.subheader(f"使用 '{result['input']}' 生成的新关键词")
+            display_keywords_and_links(result['results'])
