@@ -133,6 +133,38 @@ def fetch_text_response(prompt, model):
         return reply
     return asyncio.run(fetch())
 
+def generate_japanese_vocab(input_text, model):
+    # Prompt for generating vocabularies with translations and examples
+    prompt = f"""
+    请生成与输入的词语 "{input_text}" 相关的日语学习词汇，要求如下：
+    1. 同义词 (Japanese and Chinese translation)
+    2. 反义词 (Japanese and Chinese translation)
+    3. 近义词 (Japanese and Chinese translation)
+    4. 发散类似单词 (Japanese and Chinese translation)
+    5. 重要语法点 (Japanese and Chinese translation)
+    每个词条包括日语和中文的对照，以及对应的例句（日语和中文对照）。
+    提供的词汇格式如下：
+    - 同义词: 日本语词汇 - 中文翻译 (例句: 日语例句 - 中文例句)
+    - 反义词: ...
+    """
+
+    async def fetch_vocab_response():
+        message = ProtocolMessage(role="user", content=prompt)
+        reply = ""
+        async for partial in get_bot_response(messages=[message], bot_name=model, api_key=api_key):
+            response = json.loads(partial.raw_response["text"])
+            reply += response["text"]
+        return reply
+
+    vocab_response = asyncio.run(fetch_vocab_response())
+    if vocab_response:
+        try:
+            vocab_items = vocab_response.splitlines()
+            return vocab_items
+        except Exception as e:
+            st.error(f"Error processing vocabularies: {str(e)}")
+            return []
+
 # Japanese Learning Page Block (updated to include the model)
 def japanese_learning_page():
     st.header("日语学习")
@@ -154,6 +186,28 @@ def japanese_learning_page():
         for idx, result in enumerate(st.session_state["recursive_results"]):
             st.subheader(f"使用 '{result['input']}' 生成的新词汇")
             display_japanese_vocab(result['results'], selected_text_model, context=f"recursive_{idx}")
+
+# Function to display Japanese vocabularies
+def display_japanese_vocab(vocab_items, selected_text_model, is_initial=False, context=""):
+    for index, vocab in enumerate(vocab_items):
+        google_search = f"https://www.google.com/search?q={vocab.split(' - ')[0]}"  # Google search based on Japanese word
+        youtube_search = f"https://www.youtube.com/results?search_query={vocab.split(' - ')[0]}"
+        
+        st.markdown(f"- **{vocab}**: [Google Search]({google_search}) | [YouTube Search]({youtube_search})")
+
+        if st.button("生成相关词汇", key=f"{context}_{index}"):
+            new_vocab = generate_japanese_vocab(vocab.split(' - ')[0], selected_text_model)
+            if new_vocab:
+                st.session_state["recursive_results"].append({
+                    "input": vocab,
+                    "results": new_vocab
+                })
+        
+        if st.button("进一步解释相关知识", key=f"explain_{context}_{index}"):
+            explanation_prompt = f"请用日语解释以下相关词汇的进一步知识: {vocab.split(' - ')[0]}，并提供中文翻译。"
+            detailed_explanation = asyncio.run(fetch_vocab_response(explanation_prompt, selected_text_model))
+            if detailed_explanation:
+                st.markdown(f"**详细解释** (日语/中文对照):\n\n{detailed_explanation}")
 
 # Keyword Extraction Page Block
 def keyword_extraction_page():
