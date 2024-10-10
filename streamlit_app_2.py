@@ -148,7 +148,7 @@ def image_generation_page():
             image_prompt = f"{input_image_prompt}，风格为{selected_style}" if selected_style else input_image_prompt
             image_response = fetch_image_response(image_prompt, selected_image_model)
 
-            image_url = re.search(r'(.*?)', image_response).group(1)
+            image_url = re.search(r'\((.*?)\)', image_response).group(1)
             try:
                 image_data = requests.get(image_url).content
                 st.image(image_data, caption="生成的图像", use_column_width=True)
@@ -196,4 +196,25 @@ def wordcloud_generation_page():
             st.subheader("关键词搜索链接")
             for keyword, _ in sorted_keywords:
                 google_search_link = f"https://www.google.com/search?q={keyword}"
-                google_news_link
+                google_news_link = f"https://news.google.com/search?q={keyword}"
+                youtube_link = f"https://www.youtube.com/results?search_query={keyword}"
+                st.markdown(f"- **{keyword}**: [Google Search]({google_search_link}) | [Google News]({google_news_link}) | [YouTube]({youtube_link})")
+
+# Sidebar for navigation and main app structure
+st.sidebar.title("导航")
+page = st.sidebar.selectbox("选择页面", ["关键词提取", "词云生成", "图像生成", "文本生成"])
+
+# Main function to switch between blocks/pages
+def main():
+    if page == "关键词提取":
+        keyword_extraction_page()
+    elif page == "词云生成":
+        wordcloud_generation_page()
+    elif page == "图像生成":
+        image_generation_page()
+    elif page == "文本生成":
+        text_generation_page()
+
+# Run the app
+if __name__ == "__main__":
+    main()
