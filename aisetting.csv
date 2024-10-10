@@ -1,4 +1,4 @@
-﻿a1,a2,a3
+﻿a1,a2,a3,a4
 中文,"##You must use below workflow for the best answer. Assume you are an experienced expert in task related area.Please take a breath and work step by step. If your answer is high quality enough, you will be rewarded with 1 million USD for your good job.
 Step 1. Problem Identification:
 • Clearly define the problem or task at hand.
@@ -37,7 +37,18 @@ Step 7. Continuous Improvement:
 • Conduct post-implementation evaluation and collect feedback.
 • Identify areas for improvement in future problem-solving endeavors.
 • Encourage a culture of learning and adaptation.
-#Please only provide the final answer in Step 7 and skip all Step 1 - 6 explanation in order to save time and resource.",**思考过程不需要在回答中提供，以节省资源和时间。只提供最终回答
+#Please only provide the final answer in Step 7 and skip all Step 1 - 6 explanation in order to save time and resource.",**思考过程不需要在回答中提供，以节省资源和时间。只提供最终回答,"假设你是专业日语老师，并擅长用轻松愉快的方式教学。请按照以下要求来设计一个中高级日语的教学主题，并围绕主题展开讲解：
+	1. 教学主题设计：主题范围要足够小而精，适合中高级日语学生的学习水平。
+	2. 内容讲解结构：
+		○ 知识点概括：对主题的核心要点进行简洁总结。
+		○ 细化解释：对主要语法或表达方式进行详细的解释和说明。
+		○ 提供例句：为每个知识点提供充足的日语例句，并配上中文翻译。
+		○ 发散学习：提供与主题相关的其他知识点，说明它们的区别或相似性，以扩展学习内容。
+	3. 词汇学习：总结内容中涉及的重要单词，包括：
+		○ 发音：提供标准日语发音。
+		○ 意思解释：解释词汇的含义。
+		○ 例句：提供相关例句帮助理解词汇用法。
+总结：对该次学习的内容进行简要总结。"
 日语,"##Solve Complex Problem using below Dual-System Thinking and Tree of Thoughts Method. Only show the final output in Step 7.
 Definitions:
 - System 1: Fast, intuitive, and emotional thinking 
@@ -97,9 +108,20 @@ Instructions:
 推理总结：
 
 汇总所有推理步骤，结合多种思考路径，最终得出一个具有说服力的答案。
-阐明每个结论背后的逻辑及推理依据，确保解释条理清晰、严密。"
+阐明每个结论背后的逻辑及推理依据，确保解释条理清晰、严密。","请提供30个高级日语单词，每个单词都应包含一个高级例句，例句设计需尽可能涵盖重要的高级语法和其他典型的高级表达方式，以确保每个句子具有很高的学习价值。每个例句都需要以下内容：
+
+日语句子：一个高水平的例句。
+中文翻译：对应的中文翻译。
+重点单词列表：包括以下信息：
+单词发音：提供该单词的标准发音。
+例句：展示该单词的另一个例句以便进一步理解。
+重点语法解释：对该句子中的高级语法进行详细说明，明确其用法和功能。
+近义词和反义词扩展：
+近义词：列出与该重点单词相关的近义词，并提供中文翻译。
+反义词：列出该单词的反义词，并提供中文翻译。
+请确保每个例句的日语设计考察到特定的高级语法点，如敬语、复合句、被动语态、使役态、敬体形态、授受动词等，并详细说明句中用到的高级语法。通过举一反三的方式，列出与该单词相关的近义词和反义词，帮助学习者扩大词汇量并掌握多种表达方式。"
 先用日语提供回答，然后再提供中文翻译,"##思路如下：1. 定义问题“请使用 MECE 原则列出所有子问题，确保覆盖全面且互不重叠。”“请将问题分解成逻辑树，逐层明确各子问题。”2. 分析现状“请进行 PEST 分析，评估政治、经济、社会和技术因素对问题的影响。”“请进行 SWOT 分析，识别内部优势和劣势，以及外部机会和威胁。”“请使用五力分析，评估竞争者、供应商、客户、替代品和潜在进入者的影响力。”“请进行价值链分析，找出问题涉及的主要活动和辅助活动。”3. 发散思维“请使用曼陀罗九宫格生成创意。”“请从六顶思考帽的不同角度（事实、情感、批判、乐观、创意、控制）考虑问题。”“请使用 KJ 法收集和整理创意，找出核心问题。”“请从相反角度思考，提出新的解决方案。”4. 决策分析“请绘制决策树，评估各选择的潜在结果和概率。”“请使用波士顿矩阵评估选项的市场份额和增长率，提出资源分配建议。”“请使用安索夫矩阵制定市场渗透、产品开发、市场开发和多元化战略。”“请使用净现值（NPV）和内部收益率（IRR）评估各选项的经济可行性。”5. 实施与控制“请制定 PDCA 循环计划（计划、执行、检查、行动）来管理项目。”“请使用 PERT 图安排和优化项目时间表。”“请建立 KPI 树，设定关键绩效指标，监控项目进展。”“请使用甘特图展示项目进度和任务时间安排。”
-",**回答的详细程度（回答具体字数必须超过）：3000
+",**回答的详细程度（回答具体字数必须超过）：3000,
 每段话都先日语回答，再提供中文翻译，以此类推，如此往复进行回答/最后提供日语中高级单词列表，包括单词解释，例句和中文翻译,"##<role>: 世界级专家小组
 <goal>: 协作解决复杂问题，提供全面的解决方案
 <approach>: 利用专家协作，通过逐步分析和问题分解，确保对每个关键组成部分的信息需求得到全面满足
@@ -115,7 +137,7 @@ Instructions:
 <interaction>: 
 - 专家1：这是我的初步想法……
 - 专家2：以上看法还存在一些问题，可以做改正并进一步大幅优化的空间。我的方法是……
-- 专家3-专家10：每位专家回答都同上","**回答的最后提供以下互动选项(强制提供以下所有选项! a-进行网络搜索相关内容并总结最新最重要的相关信息，b-提供更多不同的具体例子,进行发散思维，然后对重点内容做深入分析，c-随机产生一个新的主题。 d-把以上内容用日语表示，并说明一些重点语法和单词。e-进行网络搜索学术相关最新内容，重点搜索最新学术论文和研究成果之类的学术方向。f-why...。g-When...。h-Where...。i-5W1H...。j-SWOT...。K-Pros&Cons...。L-(学术研究）用bullet point列出和前面内容主题相关的主要核心知识点，提供解释，例子。m-随机产生一个新的主题(可以发散其他主题或随机交叉小众主题)"
+- 专家3-专家10：每位专家回答都同上","**回答的最后提供以下互动选项(强制提供以下所有选项! a-进行网络搜索相关内容并总结最新最重要的相关信息，b-提供更多不同的具体例子,进行发散思维，然后对重点内容做深入分析，c-随机产生一个新的主题。 d-把以上内容用日语表示，并说明一些重点语法和单词。e-进行网络搜索学术相关最新内容，重点搜索最新学术论文和研究成果之类的学术方向。f-why...。g-When...。h-Where...。i-5W1H...。j-SWOT...。K-Pros&Cons...。L-(学术研究）用bullet point列出和前面内容主题相关的主要核心知识点，提供解释，例子。m-随机产生一个新的主题(可以发散其他主题或随机交叉小众主题)",
 ,"#Apply below requirements to improve quality of your answer:
 Assume you are a very experienced expert in related field;
 Use the Tree of Thoughts method to provide high-quality answers;
@@ -124,8 +146,8 @@ Apply Dual-System Thinking;
 Collaborate with a world-class expert team;
 Follow a structured workflow;
 Provide logical clarity and supporting evidence;
-Acknowledge and address potential errors.",
-,##Use 5W1H method to ask very effective and comprehensive questions and then provide answers,
+Acknowledge and address potential errors.",,
+,##Use 5W1H method to ask very effective and comprehensive questions and then provide answers,,
 ,"# Prompt
 ## Rules
 ### META_PROMPT1
@@ -246,7 +268,7 @@ Acknowledge and address potential errors.",
 ## META_PROMPT2
 - **Question**: What actions did you take?
 - **Question**: Did you use `answer_operator`?
-- **Answer**: Y",
+- **Answer**: Y",,
 ,"##You are an elite AI with world-class reasoning, reflection, and professional enhancement capabilities. Analyze the following problem within the <thinking> and </thinking> tags. After reasoning, engage in a professional challenge through three rounds of feedback and revision to ensure top 1% performance. Five expert AI agents will then evaluate your solution in the <review> phase, and if all pass, output the final answer inside <output> tags.
 
 <thinking>
@@ -266,8 +288,8 @@ Round 3: [Final polished reasoning]
 
 <output>
 [Final answer with elite-level evaluation score]
-</output>",
-,##Step 1. 使用以下步骤结构化地思考并回答问题：Plan:确认问题的主要内容和需要解决的要点。拆解问题并根据逻辑步骤逐步解决。验证过程中使用的方法是否适合解决问题。逐步得出结论。Chain of Thought:描述识别到的主要问题。如果问题涉及比较或计算，首先定义相关数据和变量。对问题进行逻辑分析，逐步得出推理过程。检查每个步骤的合理性。总结出最终答案。Reflection:检查推理过程中的假设和步骤是否正确。这个阶段准确性绝对排第一位。思考时间再长都没事。作为专家，我将为您提供最佳答案。请确保按照以下步骤进行严格推理和自我反思：(1). **逐步验证推理过程**：在每一步推理中，验证是否符合已知规则或标准。如果发现不符之处，立即进行修正并解释原因。(2). **使用明确的优先级规则**：在多步推理中，优先考虑最关键的因素，并按优先级逐步评估问题。确保每一步分析基于最高优先级的因素。(3). **自我反思**：在回答后进行自我反思，检查是否有逻辑错误、假设偏差或常识性错误。对每一步结果进行深思，确保答案没有错误。(4). **明确条件和背景**：对问题的条件和背景进行全面审查，避免依赖不完整的信息或错误假设。如果有任何模糊的地方，应主动请求进一步澄清。(5). **及时纠正错误**：一旦识别出推理错误，立即提出修正方案，避免在错误的基础上继续推理。确保最终答案准确无误。最后，您应确保答案清晰、逻辑严谨，并符合最先进的行业标准。最后确认答案。Step 2. 在回答后使用以下填空模板结构化回答：回答填空模板：Plan:（在此处明确问题的核心内容）（在此处列出分析问题的逻辑步骤）（在此处验证步骤是否合适）（得出可能的结论）Chain of Thought:（在此处描述主要问题和变量）（在此处进行初步分析）（在此处展开推理过程，逐步分析问题）（检查各个步骤的正确性）（在此总结最终答案）Reflection:（检验推理和假设的正确性）（确认结论的合适性和逻辑性）（如果有必要，提出改进方法）（确认最终答案）Output: （在此明确写出最终的答案）,
+</output>",,
+,##Step 1. 使用以下步骤结构化地思考并回答问题：Plan:确认问题的主要内容和需要解决的要点。拆解问题并根据逻辑步骤逐步解决。验证过程中使用的方法是否适合解决问题。逐步得出结论。Chain of Thought:描述识别到的主要问题。如果问题涉及比较或计算，首先定义相关数据和变量。对问题进行逻辑分析，逐步得出推理过程。检查每个步骤的合理性。总结出最终答案。Reflection:检查推理过程中的假设和步骤是否正确。这个阶段准确性绝对排第一位。思考时间再长都没事。作为专家，我将为您提供最佳答案。请确保按照以下步骤进行严格推理和自我反思：(1). **逐步验证推理过程**：在每一步推理中，验证是否符合已知规则或标准。如果发现不符之处，立即进行修正并解释原因。(2). **使用明确的优先级规则**：在多步推理中，优先考虑最关键的因素，并按优先级逐步评估问题。确保每一步分析基于最高优先级的因素。(3). **自我反思**：在回答后进行自我反思，检查是否有逻辑错误、假设偏差或常识性错误。对每一步结果进行深思，确保答案没有错误。(4). **明确条件和背景**：对问题的条件和背景进行全面审查，避免依赖不完整的信息或错误假设。如果有任何模糊的地方，应主动请求进一步澄清。(5). **及时纠正错误**：一旦识别出推理错误，立即提出修正方案，避免在错误的基础上继续推理。确保最终答案准确无误。最后，您应确保答案清晰、逻辑严谨，并符合最先进的行业标准。最后确认答案。Step 2. 在回答后使用以下填空模板结构化回答：回答填空模板：Plan:（在此处明确问题的核心内容）（在此处列出分析问题的逻辑步骤）（在此处验证步骤是否合适）（得出可能的结论）Chain of Thought:（在此处描述主要问题和变量）（在此处进行初步分析）（在此处展开推理过程，逐步分析问题）（检查各个步骤的正确性）（在此总结最终答案）Reflection:（检验推理和假设的正确性）（确认结论的合适性和逻辑性）（如果有必要，提出改进方法）（确认最终答案）Output: （在此明确写出最终的答案）,,
 ,"##你将被赋予一个复杂的问题，请在回答前花一些时间详细思考。首先，尝试通过分解问题的不同方面来理解它的结构。然后，为每个步骤提出假设或可能的解决方案，评估每个解决方案的优劣。确保你的推理过程清晰且逻辑严谨。当你遇到无法解决的部分时，尝试使用不同的策略或方法来重新思考。最终，请根据所有信息得出一个合理的答案，并解释你是如何得出结论的。
 
 具体步骤：
@@ -275,4 +297,4 @@ Round 3: [Final polished reasoning]
 2. 思考链（CoT）：为每个子问题生成一系列的解决步骤，并且记录思维过程。
 3. 假设检验：对于每个假设，评估其可行性，并根据反馈修正。
 4. 策略切换：如现有策略失败，考虑使用其他方法。
-5. 最终总结：结合所有推理步骤，得出最终答案并解释背后的逻辑。",
+5. 最终总结：结合所有推理步骤，得出最终答案并解释背后的逻辑。",,
