@@ -200,9 +200,35 @@ def wordcloud_generation_page():
                 youtube_link = f"https://www.youtube.com/results?search_query={keyword}"
                 st.markdown(f"- **{keyword}**: [Google Search]({google_search_link}) | [Google News]({google_news_link}) | [YouTube]({youtube_link})")
 
+def japanese_learning_page():
+    st.header("学习日语")
+    input_text_prompt = st.text_input("请输入与学习日语相关的提示词")
+    
+    # Extract options for a4 column (附加项)
+    selected_a4_items = st.multiselect("选择附加项 (a4 列)", aisettings_df['a4'].dropna().tolist())
+    
+    # Select text generation model
+    selected_text_model = st.selectbox("选择文本生成模型", text_bots)
+
+    # Construct final prompt
+    message_content = input_text_prompt
+    if selected_a4_items:
+        message_content += f"\n附加项: {', '.join(selected_a4_items)}"
+    
+    st.subheader("AI 生成的最终提示词：")
+    st.write(f"**Prompt Input:**\n{message_content}")
+
+    if st.button("生成文本"):
+        with st.spinner("正在生成文本..."):
+            text_response = fetch_text_response(message_content, selected_text_model)
+            if text_response:
+                st.success("生成的文本：")
+                st.write(text_response)
+
 # Sidebar for navigation and main app structure
 st.sidebar.title("导航")
-page = st.sidebar.selectbox("选择页面", ["关键词提取", "词云生成", "图像生成", "文本生成"])
+page = st.sidebar.selectbox("选择页面", ["关键词提取", "词云生成", "图像生成", "文本生成", "学习日语"])
+
 
 # Main function to switch between blocks/pages
 def main():
@@ -214,6 +240,8 @@ def main():
         image_generation_page()
     elif page == "文本生成":
         text_generation_page()
+    elif page == "学习日语":
+        japanese_learning_page()
 
 # Run the app
 if __name__ == "__main__":
