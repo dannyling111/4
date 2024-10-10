@@ -43,13 +43,7 @@ aisettings_df = pd.read_csv(csv_path)
 language_options = aisettings_df['a1'].dropna().tolist()
 thinking_options = aisettings_df['a2'].dropna().tolist()
 
-# Initialize session state
-if "initial_vocabs" not in st.session_state:
-    st.session_state["initial_vocabs"] = []
-if "recursive_results" not in st.session_state:
-    st.session_state["recursive_results"] = []
-
-# General-purpose functions (same as before)
+# General-purpose functions
 def generate_keywords_and_links(input_text, language, model):
     fixed_prompt_append = """
     Provide a list of 20 most related keywords, in the following format:
@@ -121,118 +115,7 @@ def muted_color_func(word, font_size, position, orientation, random_state=None, 
     l = random.randint(40, 50)
     return f"hsl({h}, {s}%, {l}%)"
 
-
-# Fetch Text Response Function
-def fetch_text_response(prompt, model):
-    async def fetch():
-        message = ProtocolMessage(role="user", content=prompt)
-        reply = ""
-        async for partial in get_bot_response(messages=[message], bot_name=model, api_key=api_key):
-            response = json.loads(partial.raw_response["text"])
-            reply += response["text"]
-        return reply
-    return asyncio.run(fetch())
-
-def generate_japanese_vocab(input_text, model):
-    # Prompt for generating vocabularies with translations and examples
-    prompt = f"""
-    请生成与输入的词语 "{input_text}" 相关的日语学习词汇，要求如下：
-    1. 同义词 (Japanese and Chinese translation)
-    2. 反义词 (Japanese and Chinese translation)
-    3. 近义词 (Japanese and Chinese translation)
-    4. 发散类似单词 (Japanese and Chinese translation)
-    5. 重要语法点 (Japanese and Chinese translation)
-    每个词条包括日语和中文的对照，以及对应的例句（日语和中文对照）。
-    提供的词汇格式如下：
-    - 同义词: 日本语词汇 - 中文翻译 (例句: 日语例句 - 中文例句)
-    - 反义词: ...
-    """
-
-    async def fetch_vocab_response():
-        message = ProtocolMessage(role="user", content=prompt)
-        reply = ""
-        async for partial in get_bot_response(messages=[message], bot_name=model, api_key=api_key):
-            response = json.loads(partial.raw_response["text"])
-            reply += response["text"]
-        return reply
-
-    vocab_response = asyncio.run(fetch_vocab_response())
-    if vocab_response:
-        try:
-            vocab_items = vocab_response.splitlines()
-            return vocab_items
-        except Exception as e:
-            st.error(f"Error processing vocabularies: {str(e)}")
-            return []
-
-# Japanese Learning Page Block (updated to include the model)
-
-def generate_explanation(input_text, model):
-    prompt = f"请用日语解释以下相关词汇的进一步知识: {input_text}，并提供中文翻译。"
-
-    async def fetch_explanation_response():
-        message = ProtocolMessage(role="user", content=prompt)
-        reply = ""
-        async for partial in get_bot_response(messages=[message], bot_name=model, api_key=api_key):
-            response = json.loads(partial.raw_response["text"])
-            reply += response["text"]
-        return reply
-
-    explanation_response = asyncio.run(fetch_explanation_response())
-    if explanation_response:
-        return explanation_response
-    else:
-        st.error("Error generating explanation.")
-        return ""
-
-# Function to display Japanese vocabularies (fixed button key conflicts)
-def display_japanese_vocab(vocab_items, selected_text_model, is_initial=False, context=""):
-    for index, vocab in enumerate(vocab_items):
-        japanese_word = vocab.split(' - ')[0].strip()  # Extract the Japanese word for searching
-        google_search = f"https://www.google.com/search?q={japanese_word}"
-        youtube_search = f"https://www.youtube.com/results?search_query={japanese_word}"
-        
-        # Display the word and links
-        st.markdown(f"- {vocab}: [Google Search]({google_search}) | [YouTube Search]({youtube_search})")
-        
-        # Generate new related vocabulary
-        if st.button("生成相关词汇", key=f"{context}_vocab_{index}"):
-            new_vocab = generate_japanese_vocab(japanese_word, selected_text_model)
-            if new_vocab:
-                st.session_state["recursive_results"].append({
-                    "input": japanese_word,
-                    "results": new_vocab
-                })
-
-        # Generate explanation
-        if st.button("进一步解释相关知识", key=f"{context}_explain_{index}"):
-            explanation = generate_explanation(japanese_word, selected_text_model)
-            if explanation:
-                st.markdown(f"详细解释 (日语/中文对照):\n\n{explanation}")
-
-# Japanese Learning Page Block
-def japanese_learning_page():
-    st.header("日语学习")
-    input_vocab_prompt = st.text_input("请输入日语学习相关的提示词")
-
-    selected_text_model = st.selectbox("选择文本生成模型", text_bots)
-
-    if st.button("生成词汇和解释"):
-        with st.spinner("正在生成相关词汇..."):
-            vocab_items = generate_japanese_vocab(input_vocab_prompt, selected_text_model)
-            if vocab_items:
-                st.session_state["initial_vocabs"] = vocab_items
-
-    if st.session_state["initial_vocabs"]:
-        st.subheader("初始词汇和解释")
-        display_japanese_vocab(st.session_state["initial_vocabs"], selected_text_model, is_initial=True, context="initial")
-
-    if st.session_state["recursive_results"]:
-        for idx, result in enumerate(st.session_state["recursive_results"]):
-            st.subheader(f"使用 '{result['input']}' 生成的新词汇")
-            display_japanese_vocab(result['results'], selected_text_model, context=f"recursive_{idx}")
-
-# Keyword Extraction Page Block
+# Page Block 1: Keyword Extraction
 def keyword_extraction_page():
     st.header("关键词提取和搜索链接生成")
     input_text_prompt = st.text_input("请输入文本生成提示词")
@@ -253,23 +136,64 @@ def display_keywords_and_links(keywords):
         bilibili_search = f"https://search.bilibili.com/all?keyword={keyword}"
         st.markdown(f"- **{keyword}**: [Google Search]({google_search}) | [YouTube Search]({youtube_search}) | [Bilibili Search]({bilibili_search})")
 
-# Sidebar for navigation and main app structure
-st.sidebar.title("导航")
-page = st.sidebar.selectbox("选择页面", ["关键词提取", "词云生成", "图像生成", "文本生成", "日语学习"])
+# Page Block 2: Image Generation
+def image_generation_page():
+    st.header("图像生成")
+    input_image_prompt = st.text_input("请输入图像生成提示词")
+    selected_style = st.selectbox("选择绘画风格", painting_styles, index=0)
+    selected_image_model = st.selectbox("选择图像生成模型", image_bots)
 
-# Main function to switch between blocks/pages
-def main():
-    if page == "关键词提取":
-        keyword_extraction_page()
-    elif page == "词云生成":
-        wordcloud_generation_page()
-    elif page == "图像生成":
-        image_generation_page()
-    elif page == "文本生成":
-        text_generation_page()
-    elif page == "日语学习":
-        japanese_learning_page()
+    if st.button("生成图像"):
+        with st.spinner("正在生成图像..."):
+            image_prompt = f"{input_image_prompt}，风格为{selected_style}" if selected_style else input_image_prompt
+            image_response = fetch_image_response(image_prompt, selected_image_model)
 
-# Run the app
-if __name__ == "__main__":
-    main()
+            image_url = re.search(r'(.*?)', image_response).group(1)
+            try:
+                image_data = requests.get(image_url).content
+                st.image(image_data, caption="生成的图像", use_column_width=True)
+            except Exception as e:
+                st.error(f"无法加载图像: {str(e)}")
+
+# Page Block 3: Text Generation
+def text_generation_page():
+    st.header("文本生成")
+    input_text_prompt = st.text_input("请输入文本生成提示词")
+    selected_language = st.selectbox("选择语言", [''] + language_options)
+    selected_thinking = st.selectbox("选择思维方式", [''] + thinking_options)
+    selected_a3_items = st.multiselect("选择附加项 (a3 列)", aisettings_df['a3'].dropna().tolist())
+    selected_text_model = st.selectbox("选择文本生成模型", text_bots)
+
+    message_content = input_text_prompt
+    if selected_language:
+        message_content += f"\nLanguage: {selected_language}"
+    if selected_thinking:
+        message_content += f"\nThinking: {selected_thinking}"
+    if selected_a3_items:
+        message_content += f"\nAdditional: {', '.join(selected_a3_items)}"
+
+    st.subheader("AI 生成的最终提示词：")
+    st.write(f"**Prompt Input:**\n{message_content}")
+
+    if st.button("生成文本"):
+        with st.spinner("正在生成文本..."):
+            text_response = fetch_text_response(message_content, selected_text_model)
+            if text_response:
+                st.success("生成的文本：")
+                st.write(text_response)
+
+# Page Block 4: Word Cloud Generation
+def wordcloud_generation_page():
+    st.header("生成 Google Trends 词云")
+    if st.button("生成词云"):
+        with st.spinner("正在生成词云..."):
+            trend_keywords = get_google_trends()
+            wordcloud_image, keyword_frequencies = generate_wordcloud(trend_keywords)
+
+            st.image(wordcloud_image, caption="Google Trends 词云", use_column_width=True)
+
+            sorted_keywords = sorted(keyword_frequencies.items(), key=lambda x: x[1], reverse=True)[:20]
+            st.subheader("关键词搜索链接")
+            for keyword, _ in sorted_keywords:
+                google_search_link = f"https://www.google.com/search?q={keyword}"
+                google_news_link
