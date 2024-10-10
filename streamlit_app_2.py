@@ -219,11 +219,16 @@ def japanese_learning_page():
     # Extract options for a4 column (附加项)
     selected_a4_items = st.multiselect("选择附加项 (a4 列)", aisettings_df['a4'].dropna().tolist())
     
+    # Select language (单选)
+    selected_language = st.selectbox("选择语言", [''] + language_options)  # 单选语言
+    
     # Select text generation model
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
 
     # Construct final prompt
     message_content = input_text_prompt
+    if selected_language:
+        message_content += f"\nLanguage: {selected_language}"
     if selected_a4_items:
         message_content += f"\n附加项: {', '.join(selected_a4_items)}"
     
