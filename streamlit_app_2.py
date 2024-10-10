@@ -155,6 +155,27 @@ def japanese_learning_page():
             st.subheader(f"使用 '{result['input']}' 生成的新词汇")
             display_japanese_vocab(result['results'], selected_text_model, context=f"recursive_{idx}")
 
+# Keyword Extraction Page Block
+def keyword_extraction_page():
+    st.header("关键词提取和搜索链接生成")
+    input_text_prompt = st.text_input("请输入文本生成提示词")
+
+    selected_language = st.selectbox("选择语言", language_options)
+    selected_text_model = st.selectbox("选择文本生成模型", text_bots)
+
+    if st.button("生成关键词和链接"):
+        with st.spinner("正在生成关键词和链接..."):
+            keywords = generate_keywords_and_links(input_text_prompt, selected_language, selected_text_model)
+            if keywords:
+                display_keywords_and_links(keywords)
+
+def display_keywords_and_links(keywords):
+    for keyword in keywords:
+        google_search = f"https://www.google.com/search?q={keyword}"
+        youtube_search = f"https://www.youtube.com/results?search_query={keyword}"
+        bilibili_search = f"https://search.bilibili.com/all?keyword={keyword}"
+        st.markdown(f"- **{keyword}**: [Google Search]({google_search}) | [YouTube Search]({youtube_search}) | [Bilibili Search]({bilibili_search})")
+
 # Sidebar for navigation and main app structure
 st.sidebar.title("导航")
 page = st.sidebar.selectbox("选择页面", ["关键词提取", "词云生成", "图像生成", "文本生成", "日语学习"])
