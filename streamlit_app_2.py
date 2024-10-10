@@ -51,19 +51,76 @@ if "recursive_results" not in st.session_state:
 
 # General-purpose functions (same as before)
 def generate_keywords_and_links(input_text, language, model):
-    # ... (same function as before)
+    fixed_prompt_append = """
+    Provide a list of 20 most related keywords, in the following format:
+    - Keyword 1
+    - Keyword 2
+    - Keyword 3
+    """
+    final_prompt = f"{input_text}\n{fixed_prompt_append}"
+
+    async def fetch_text_response():
+        message = ProtocolMessage(role="user", content=final_prompt)
+        reply = ""
+        async for partial in get_bot_response(messages=[message], bot_name=model, api_key=api_key):
+            response = json.loads(partial.raw_response["text"])
+            reply += response["text"]
+        return reply
+
+    text_response = asyncio.run(fetch_text_response())
+    if text_response:
+        try:
+            keywords = [line.strip()[2:] for line in text_response.splitlines() if line.startswith("-")]
+            return keywords
+        except Exception as e:
+            st.error(f"Error processing keywords: {str(e)}")
+            return []
 
 def fetch_image_response(image_prompt, model):
-    # ... (same function as before)
+    async def fetch():
+        message = ProtocolMessage(role="user", content=image_prompt)
+        reply = ""
+        async for partial in get_bot_response(messages=[message], bot_name=model, api_key=api_key):
+            response = json.loads(partial.raw_response["text"])
+            reply += response["text"]
+        return reply
+
+    return asyncio.run(fetch())
 
 def get_google_trends():
-    # ... (same function as before)
+    pytrends = TrendReq(hl='en-US', tz=360)
+    countries = ['united_states', 'japan', 'hong_kong', 'united_kingdom', 'taiwan', 'india', 'singapore', 'australia']
+    trends_list = []
+    for country in countries:
+        trends = pytrends.trending_searches(pn=country)
+        trends_list.extend(trends.values.tolist())
+    return [item[0].strip() for item in trends_list]
 
 def generate_wordcloud(keywords):
-    # ... (same function as before)
+    font_path = 'NotoSansCJK-Regular.ttc'  # Update to your font path
+    wordcloud = WordCloud(
+        font_path=font_path,
+        width=1600, 
+        height=1600, 
+        background_color="white",
+        color_func=muted_color_func
+    ).generate_from_frequencies(Counter(keywords))
+
+    plt.figure(figsize=(10, 10), dpi=100)
+    plt.imshow(wordcloud, interpolation='bilinear')
+    plt.axis("off")
+
+    buf = BytesIO()
+    plt.savefig(buf, format="png")
+    buf.seek(0)
+    return buf, wordcloud.words_
 
 def muted_color_func(word, font_size, position, orientation, random_state=None, **kwargs):
-    # ... (same function as before)
+    h = random.randint(180, 360)
+    s = random.randint(50, 80)
+    l = random.randint(40, 50)
+    return f"hsl({h}, {s}%, {l}%)"
+
 
 # Fetch Text Response Function
 def fetch_text_response(prompt, model):
