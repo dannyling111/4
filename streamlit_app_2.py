@@ -216,9 +216,9 @@ def japanese_learning_page():
     st.header("学习日语")
     input_text_prompt = st.text_input("请输入与学习日语相关的提示词")
     
-    # Extract options for a4 column (附加项)
-    selected_a4_items = st.multiselect("选择附加项 (a4 列)", aisettings_df['a4'].dropna().tolist())
-    
+    # Extract options for a4 column (附加项) and change to single select (单选)
+    selected_a4_item = st.selectbox("选择附加项 (a4 列)", [''] + aisettings_df['a4'].dropna().tolist())  # 改为单选
+
     # Select language (单选)
     selected_language = st.selectbox("选择语言", [''] + language_options)  # 单选语言
     
@@ -229,8 +229,8 @@ def japanese_learning_page():
     message_content = input_text_prompt
     if selected_language:
         message_content += f"\nLanguage: {selected_language}"
-    if selected_a4_items:
-        message_content += f"\n附加项: {', '.join(selected_a4_items)}"
+    if selected_a4_item:
+        message_content += f"\n附加项: {selected_a4_item}"  # 单选附加项
     
     st.subheader("AI 生成的最终提示词：")
     st.write(f"**Prompt Input:**\n{message_content}")
