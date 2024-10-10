@@ -200,6 +200,18 @@ def wordcloud_generation_page():
                 youtube_link = f"https://www.youtube.com/results?search_query={keyword}"
                 st.markdown(f"- **{keyword}**: [Google Search]({google_search_link}) | [Google News]({google_news_link}) | [YouTube]({youtube_link})")
 
+def fetch_text_response(message_content, model):
+    async def fetch():
+        message = ProtocolMessage(role="user", content=message_content)
+        reply = ""
+        async for partial in get_bot_response(messages=[message], bot_name=model, api_key=api_key):
+            response = json.loads(partial.raw_response["text"])
+            reply += response["text"]
+        return reply
+
+    return asyncio.run(fetch())
+
+# Page Block 5: Japanese Learning Page
 def japanese_learning_page():
     st.header("学习日语")
     input_text_prompt = st.text_input("请输入与学习日语相关的提示词")
@@ -228,7 +240,6 @@ def japanese_learning_page():
 # Sidebar for navigation and main app structure
 st.sidebar.title("导航")
 page = st.sidebar.selectbox("选择页面", ["关键词提取", "词云生成", "图像生成", "文本生成", "学习日语"])
-
 
 # Main function to switch between blocks/pages
 def main():
