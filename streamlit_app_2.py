@@ -193,7 +193,7 @@ def display_japanese_vocab(vocab_items, selected_text_model, is_initial=False, c
         youtube_search = f"https://www.youtube.com/results?search_query={japanese_word}"
         
         # Display the word and links
-        st.markdown(f"- **{vocab}**: [Google Search]({google_search}) | [YouTube Search]({youtube_search})")
+        st.markdown(f"- {vocab}: [Google Search]({google_search}) | [YouTube Search]({youtube_search})")
         
         # Generate new related vocabulary
         if st.button("生成相关词汇", key=f"{context}_vocab_{index}"):
@@ -208,7 +208,7 @@ def display_japanese_vocab(vocab_items, selected_text_model, is_initial=False, c
         if st.button("进一步解释相关知识", key=f"{context}_explain_{index}"):
             explanation = generate_explanation(japanese_word, selected_text_model)
             if explanation:
-                st.markdown(f"**详细解释** (日语/中文对照):\n\n{explanation}")
+                st.markdown(f"详细解释 (日语/中文对照):\n\n{explanation}")
 
 # Japanese Learning Page Block
 def japanese_learning_page():
