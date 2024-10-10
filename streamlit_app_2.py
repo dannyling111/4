@@ -166,6 +166,51 @@ def generate_japanese_vocab(input_text, model):
             return []
 
 # Japanese Learning Page Block (updated to include the model)
+
+def generate_explanation(input_text, model):
+    prompt = f"请用日语解释以下相关词汇的进一步知识: {input_text}，并提供中文翻译。"
+
+    async def fetch_explanation_response():
+        message = ProtocolMessage(role="user", content=prompt)
+        reply = ""
+        async for partial in get_bot_response(messages=[message], bot_name=model, api_key=api_key):
+            response = json.loads(partial.raw_response["text"])
+            reply += response["text"]
+        return reply
+
+    explanation_response = asyncio.run(fetch_explanation_response())
+    if explanation_response:
+        return explanation_response
+    else:
+        st.error("Error generating explanation.")
+        return ""
+
+# Function to display Japanese vocabularies (fixed button key conflicts)
+def display_japanese_vocab(vocab_items, selected_text_model, is_initial=False, context=""):
+    for index, vocab in enumerate(vocab_items):
+        japanese_word = vocab.split(' - ')[0].strip()  # Extract the Japanese word for searching
+        google_search = f"https://www.google.com/search?q={japanese_word}"
+        youtube_search = f"https://www.youtube.com/results?search_query={japanese_word}"
+        
+        # Display the word and links
+        st.markdown(f"- **{vocab}**: [Google Search]({google_search}) | [YouTube Search]({youtube_search})")
+        
+        # Generate new related vocabulary
+        if st.button("生成相关词汇", key=f"{context}_vocab_{index}"):
+            new_vocab = generate_japanese_vocab(japanese_word, selected_text_model)
+            if new_vocab:
+                st.session_state["recursive_results"].append({
+                    "input": japanese_word,
+                    "results": new_vocab
+                })
+
+        # Generate explanation
+        if st.button("进一步解释相关知识", key=f"{context}_explain_{index}"):
+            explanation = generate_explanation(japanese_word, selected_text_model)
+            if explanation:
+                st.markdown(f"**详细解释** (日语/中文对照):\n\n{explanation}")
+
+# Japanese Learning Page Block
 def japanese_learning_page():
     st.header("日语学习")
     input_vocab_prompt = st.text_input("请输入日语学习相关的提示词")
@@ -178,36 +223,14 @@ def japanese_learning_page():
             if vocab_items:
                 st.session_state["initial_vocabs"] = vocab_items
 
-    if "initial_vocabs" in st.session_state and st.session_state["initial_vocabs"]:
+    if st.session_state["initial_vocabs"]:
         st.subheader("初始词汇和解释")
         display_japanese_vocab(st.session_state["initial_vocabs"], selected_text_model, is_initial=True, context="initial")
 
-    if "recursive_results" in st.session_state and st.session_state["recursive_results"]:
+    if st.session_state["recursive_results"]:
         for idx, result in enumerate(st.session_state["recursive_results"]):
             st.subheader(f"使用 '{result['input']}' 生成的新词汇")
             display_japanese_vocab(result['results'], selected_text_model, context=f"recursive_{idx}")
-
-# Function to display Japanese vocabularies
-def display_japanese_vocab(vocab_items, selected_text_model, is_initial=False, context=""):
-    for index, vocab in enumerate(vocab_items):
-        google_search = f"https://www.google.com/search?q={vocab.split(' - ')[0]}"  # Google search based on Japanese word
-        youtube_search = f"https://www.youtube.com/results?search_query={vocab.split(' - ')[0]}"
-        
-        st.markdown(f"- **{vocab}**: [Google Search]({google_search}) | [YouTube Search]({youtube_search})")
-
-        if st.button("生成相关词汇", key=f"{context}_{index}"):
-            new_vocab = generate_japanese_vocab(vocab.split(' - ')[0], selected_text_model)
-            if new_vocab:
-                st.session_state["recursive_results"].append({
-                    "input": vocab,
-                    "results": new_vocab
-                })
-        
-        if st.button("进一步解释相关知识", key=f"explain_{context}_{index}"):
-            explanation_prompt = f"请用日语解释以下相关词汇的进一步知识: {vocab.split(' - ')[0]}，并提供中文翻译。"
-            detailed_explanation = asyncio.run(fetch_vocab_response(explanation_prompt, selected_text_model))
-            if detailed_explanation:
-                st.markdown(f"**详细解释** (日语/中文对照):\n\n{detailed_explanation}")
 
 # Keyword Extraction Page Block
 def keyword_extraction_page():
