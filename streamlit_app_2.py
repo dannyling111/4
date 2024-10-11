@@ -332,7 +332,8 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                 analysis_article = fetch_text_response(analysis_prompt, selected_text_model)
 
                 if analysis_article:
-                    # Only add the analysis article to the output rounds, NO additional buttons
+                    # Append the article to the session state, with NO buttons.
+                    # Only add the analysis article to the output rounds
                     st.session_state.analysis_rounds.append([f"分析文章： {keyword}", analysis_article])
 
 # Function to handle rerunning the code with the selected keyword
