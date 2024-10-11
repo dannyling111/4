@@ -291,7 +291,10 @@ def analysis_generation_page():
             )
 
             # Append the new keywords to session state (multiple rounds of keywords)
-            st.session_state.analysis_rounds.append(new_analysis_keywords)
+            st.session_state.analysis_rounds.append({
+                'type': 'keywords',
+                'content': new_analysis_keywords
+            })
 
     # Button to clear results
     if st.button("清除结果"):
@@ -301,11 +304,15 @@ def analysis_generation_page():
 
     # Display all rounds of generated keywords or items
     if st.session_state.analysis_rounds:
-        for round_idx, keywords in enumerate(st.session_state.analysis_rounds, 1):
-            st.subheader(f"第 {round_idx} 轮生成的主题关键词")
-            display_analysis_keywords(
-                keywords, selected_language, selected_text_model, selected_fixed_prompt_a6, round_idx
-            )
+        for round_idx, round_data in enumerate(st.session_state.analysis_rounds, 1):
+            if round_data['type'] == 'keywords':
+                st.subheader(f"第 {round_idx} 轮生成的主题关键词")
+                display_analysis_keywords(
+                    round_data['content'], selected_language, selected_text_model, selected_fixed_prompt_a6, round_idx
+                )
+            elif round_data['type'] == 'article':
+                st.subheader(f"分析文章：第 {round_idx} 轮")
+                st.write(round_data['content'])
 
 # Display keywords and provide both buttons for rerun and generating an analysis article
 def display_analysis_keywords(keywords, selected_language, selected_text_model, fixed_prompt_append, round_idx):
@@ -332,9 +339,11 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                 analysis_article = fetch_text_response(analysis_prompt, selected_text_model)
 
                 if analysis_article:
-                    # Append the article to the session state, with NO buttons.
-                    # Only add the analysis article to the output rounds
-                    st.session_state.analysis_rounds.append([f"分析文章： {keyword}", analysis_article])
+                    # Append only the analysis article to the session state, and DO NOT include any buttons.
+                    st.session_state.analysis_rounds.append({
+                        'type': 'article',
+                        'content': analysis_article
+                    })
 
 # Function to handle rerunning the code with the selected keyword
 def rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append):
@@ -342,7 +351,10 @@ def rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_pr
     with st.spinner(f"正在使用关键词 {keyword} 重新生成..."):
         new_keywords = generate_keywords_and_links(keyword, selected_language, selected_text_model, fixed_prompt_append)
         # Append the new results to the previous output
-        st.session_state.analysis_rounds.append(new_keywords)
+        st.session_state.analysis_rounds.append({
+            'type': 'keywords',
+            'content': new_keywords
+        })
 
 # Fetch the analysis article using the API call
 def fetch_text_response(message_content, model):
@@ -355,37 +367,6 @@ def fetch_text_response(message_content, model):
         return reply
 
     return asyncio.run(fetch())
-
-# Page Block 5: Japanese Learning Page
-def japanese_learning_page():
-    st.header("学习日语")
-    input_text_prompt = st.text_input("请输入与学习日语相关的提示词")
-    
-    # Extract options for a4 column (附加项) and change to single select (单选)
-    selected_a4_item = st.selectbox("选择附加项 (a4 列)", [''] + aisettings_df['a4'].dropna().tolist())  # 改为单选
-
-    # Select language (单选)
-    selected_language = st.selectbox("选择语言", [''] + language_options)  # 单选语言
-    
-    # Select text generation model
-    selected_text_model = st.selectbox("选择文本生成模型", text_bots)
-
-    # Construct final prompt
-    message_content = input_text_prompt
-    if selected_language:
-        message_content += f"\nLanguage: {selected_language}"
-    if selected_a4_item:
-        message_content += f"\n附加项: {selected_a4_item}"  # 单选附加项
-    
-    st.subheader("AI 生成的最终提示词：")
-    st.write(f"**Prompt Input:**\n{message_content}")
-
-    if st.button("生成文本"):
-        with st.spinner("正在生成文本..."):
-            text_response = fetch_text_response(message_content, selected_text_model)
-            if text_response:
-                st.success("生成的文本：")
-                st.write(text_response)
 
 # Sidebar for navigation and main app structure
 def main():
