@@ -113,7 +113,8 @@ def keyword_extraction_page():
 
 # 修改后的generate_keywords_and_links函数
 def generate_keywords_and_links(input_text, language, model, fixed_prompt_append):
-    final_prompt = f"{input_text}\n{fixed_prompt_append}"
+    # 构造包含语言选项的最终提示词
+    final_prompt = f"{input_text}\n{fixed_prompt_append}\nLanguage: {language}" if language else f"{input_text}\n{fixed_prompt_append}"
 
     async def fetch_text_response():
         message = ProtocolMessage(role="user", content=final_prompt)
@@ -122,6 +123,15 @@ def generate_keywords_and_links(input_text, language, model, fixed_prompt_append
             response = json.loads(partial.raw_response["text"])
             reply += response["text"]
         return reply
+
+    text_response = asyncio.run(fetch_text_response())
+    if text_response:
+        try:
+            keywords = [line.strip()[2:] for line in text_response.splitlines() if line.startswith("-")]
+            return keywords
+        except Exception as e:
+            st.error(f"Error processing keywords: {str(e)}")
+            return []
 
     text_response = asyncio.run(fetch_text_response())
     if text_response:
