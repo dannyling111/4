@@ -19,7 +19,7 @@ from wordcloud import WordCloud
 import random
 from io import BytesIO
 import matplotlib.pyplot as plt
-
+import openpyxl
 # Configure Matplotlib to use 'Agg' backend for Streamlit compatibility
 plt.switch_backend('Agg')
 
