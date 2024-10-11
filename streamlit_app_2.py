@@ -282,7 +282,7 @@ def analysis_generation_page():
     if 'analysis_rounds' not in st.session_state:
         st.session_state.analysis_rounds = []  # Empty list to hold each round of output
 
-    # Button to generate new round of outputs
+    # Button to generate new round of outputs (keywords)
     if st.button("生成关键词"):
         with st.spinner("正在生成关键词..."):
             # Generate new keywords using a6 column
@@ -332,8 +332,8 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                 analysis_article = fetch_text_response(analysis_prompt, selected_text_model)
 
                 if analysis_article:
-                    st.subheader(f"关于 {keyword} 的分析文章：")
-                    st.write(analysis_article)
+                    # Add the analysis article as a new round of output, similar to keywords
+                    st.session_state.analysis_rounds.append([f"分析文章： {keyword}", analysis_article])
 
 # Function to handle rerunning the code with the selected keyword
 def rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append):
@@ -343,8 +343,7 @@ def rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_pr
         # Append the new results to the previous output
         st.session_state.analysis_rounds.append(new_keywords)
 
-
-  
+# Fetch the analysis article using the API call
 def fetch_text_response(message_content, model):
     async def fetch():
         message = ProtocolMessage(role="user", content=message_content)
