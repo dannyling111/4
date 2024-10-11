@@ -103,20 +103,33 @@ def keyword_extraction_page():
     fixed_prompt_options = aisettings_df['a5'].dropna().tolist()
     selected_fixed_prompt = st.selectbox("选择关键词生成模板", fixed_prompt_options)
 
-    # Initialize session state for keywords
-    if 'keywords' not in st.session_state:
-        st.session_state.keywords = []  # Initialize keywords as an empty list
+    # Initialize session state to hold multiple rounds of keyword generation
+    if 'keywords_rounds' not in st.session_state:
+        st.session_state.keywords_rounds = []  # Empty list to hold each round of keywords
 
+    # Button to generate new round of keywords
     if st.button("生成关键词和链接"):
         with st.spinner("正在生成关键词和链接..."):
-            # Generate keywords and store them in session state
-            st.session_state.keywords = generate_keywords_and_links(
+            # Generate new keywords
+            new_keywords = generate_keywords_and_links(
                 input_text_prompt, selected_language, selected_text_model, selected_fixed_prompt
             )
 
-    # Display keywords if they exist in session state
-    if st.session_state.keywords:
-        display_keywords_and_links(st.session_state.keywords, input_text_prompt, selected_language, selected_text_model, selected_fixed_prompt)
+            # Append the new keywords to session state (multiple rounds of keywords)
+            st.session_state.keywords_rounds.append(new_keywords)
+
+    # Button to clear results
+    if st.button("清除结果"):
+        st.session_state.keywords_rounds = []  # Clear all previous rounds of keywords
+        st.success("所有结果已清除！")
+
+    # Display all rounds of keywords
+    if st.session_state.keywords_rounds:
+        for round_idx, keywords in enumerate(st.session_state.keywords_rounds, 1):
+            st.subheader(f"第 {round_idx} 轮生成的关键词")
+            display_keywords_and_links(
+                keywords, input_text_prompt, selected_language, selected_text_model, selected_fixed_prompt
+            )
 
 
 
