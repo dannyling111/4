@@ -261,7 +261,90 @@ def wordcloud_generation_page():
                 google_news_link = f"https://news.google.com/search?q={keyword}"
                 youtube_link = f"https://www.youtube.com/results?search_query={keyword}"
                 st.markdown(f"- **{keyword}**: [Google Search]({google_search_link}) | [Google News]({google_news_link}) | [YouTube]({youtube_link})")
+def analysis_generation_page():
+    st.header("主题分析生成")
 
+    # Check if we need to load a keyword as input (from a previous keyword click)
+    if 'input_text_prompt_analysis' not in st.session_state:
+        st.session_state.input_text_prompt_analysis = ''  # Initialize if not present
+
+    # Set the input text from session state (this could come from a keyword button click)
+    input_text_prompt_analysis = st.text_input("请输入文本生成提示词", value=st.session_state.input_text_prompt_analysis)
+    
+    selected_language = st.selectbox("选择语言", language_options)
+    selected_text_model = st.selectbox("选择文本生成模型", text_bots)
+    
+    # Use Excel file's a6 column for the fixed prompts
+    fixed_prompt_options_a6 = aisettings_df['a6'].dropna().tolist()
+    selected_fixed_prompt_a6 = st.selectbox("选择关键词生成模板", fixed_prompt_options_a6)
+
+    # Initialize session state to hold multiple rounds of generation
+    if 'analysis_rounds' not in st.session_state:
+        st.session_state.analysis_rounds = []  # Empty list to hold each round of output
+
+    # Button to generate new round of outputs
+    if st.button("生成关键词"):
+        with st.spinner("正在生成关键词..."):
+            # Generate new keywords using a6 column
+            new_analysis_keywords = generate_keywords_and_links(
+                input_text_prompt_analysis, selected_language, selected_text_model, selected_fixed_prompt_a6
+            )
+
+            # Append the new keywords to session state (multiple rounds of keywords)
+            st.session_state.analysis_rounds.append(new_analysis_keywords)
+
+    # Button to clear results
+    if st.button("清除结果"):
+        st.session_state.analysis_rounds = []  # Clear all previous rounds of keywords
+        st.session_state.input_text_prompt_analysis = ''  # Clear the input text
+        st.success("所有结果已清除！")
+
+    # Display all rounds of generated keywords or items
+    if st.session_state.analysis_rounds:
+        for round_idx, keywords in enumerate(st.session_state.analysis_rounds, 1):
+            st.subheader(f"第 {round_idx} 轮生成的主题关键词")
+            display_analysis_keywords(
+                keywords, selected_language, selected_text_model, selected_fixed_prompt_a6, round_idx
+            )
+
+# Display keywords and provide both buttons for rerun and generating an analysis article
+def display_analysis_keywords(keywords, selected_language, selected_text_model, fixed_prompt_append, round_idx):
+    for idx, keyword in enumerate(keywords):
+        col1, col2, col3 = st.columns([3, 2, 1])  # Layout with 3 columns: keyword, rerun button, and analysis button
+
+        with col1:
+            st.markdown(f"**{keyword}**")
+
+        with col2:
+            # Ensure unique key by combining round index, loop index, and the keyword for rerun button
+            rerun_key = f"rerun_keyword_{round_idx}_{idx}_{keyword}"
+            if st.button(f"🔄 使用关键词重运行", key=rerun_key):
+                # Rerun the code with this keyword, appending results to previous outputs
+                st.session_state.input_text_prompt_analysis = keyword
+                rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append)
+
+        with col3:
+            # Ensure unique key for the analysis article button
+            article_key = f"generate_article_{round_idx}_{idx}_{keyword}"
+            if st.button(f"📝 生成分析文章", key=article_key):
+                # Use the clicked keyword to generate an analysis article
+                analysis_prompt = f"写一篇关于{keyword}的分析文章。"
+                analysis_article = fetch_text_response(analysis_prompt, selected_text_model)
+
+                if analysis_article:
+                    st.subheader(f"关于 {keyword} 的分析文章：")
+                    st.write(analysis_article)
+
+# Function to handle rerunning the code with the selected keyword
+def rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append):
+    # Generate new keywords or outputs using the selected keyword
+    with st.spinner(f"正在使用关键词 {keyword} 重新生成..."):
+        new_keywords = generate_keywords_and_links(keyword, selected_language, selected_text_model, fixed_prompt_append)
+        # Append the new results to the previous output
+        st.session_state.analysis_rounds.append(new_keywords)
+
+
+  
 def fetch_text_response(message_content, model):
     async def fetch():
         message = ProtocolMessage(role="user", content=message_content)
@@ -305,10 +388,6 @@ def japanese_learning_page():
                 st.write(text_response)
 
 # Sidebar for navigation and main app structure
-st.sidebar.title("导航")
-page = st.sidebar.selectbox("选择页面", ["关键词提取", "词云生成", "图像生成", "文本生成", "学习日语"])
-
-# Main function to switch between blocks/pages
 def main():
     if page == "关键词提取":
         keyword_extraction_page()
@@ -320,6 +399,12 @@ def main():
         text_generation_page()
     elif page == "学习日语":
         japanese_learning_page()
+    elif page == "主题分析生成":  # Newly added page route
+        analysis_generation_page()
+
+# Add the new page to the sidebar navigation
+st.sidebar.title("导航")
+page = st.sidebar.selectbox("选择页面", ["关键词提取", "词云生成", "图像生成", "文本生成", "学习日语", "主题分析生成"])
 
 # Run the app
 if __name__ == "__main__":
