@@ -135,9 +135,8 @@ def keyword_extraction_page():
         for round_idx, keywords in enumerate(st.session_state.keywords_rounds, 1):
             st.subheader(f"第 {round_idx} 轮生成的关键词")
             display_keywords_and_links(
-                keywords, input_text_prompt, selected_language, selected_text_model, selected_fixed_prompt
+                keywords, input_text_prompt, selected_language, selected_text_model, selected_fixed_prompt, round_idx
             )
-
 
 
 # 修改后的generate_keywords_and_links函数
@@ -171,8 +170,8 @@ def generate_keywords_and_links(input_text, language, model, fixed_prompt_append
             st.error(f"Error processing keywords: {str(e)}")
             return []
 
-def display_keywords_and_links(keywords, input_text, selected_language, selected_text_model, fixed_prompt_append):
-    for keyword in keywords:
+def display_keywords_and_links(keywords, input_text, selected_language, selected_text_model, fixed_prompt_append, round_idx):
+    for idx, keyword in enumerate(keywords):
         col1, col2, col3 = st.columns([3, 1, 1])  # Layout with 3 columns
 
         with col1:
@@ -185,7 +184,9 @@ def display_keywords_and_links(keywords, input_text, selected_language, selected
             st.markdown(f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})")
         
         with col3:
-            if st.button(f"🔄 重新生成 {keyword}", key=f"regen_{keyword}"):
+            # Ensure unique key by combining round index, loop index, and the keyword
+            button_key = f"regen_{round_idx}_{idx}_{keyword}"
+            if st.button(f"🔄 重新生成 {keyword}", key=button_key):
                 # Use the clicked keyword as the new input and regenerate
                 st.session_state.input_text_prompt = keyword
 
@@ -198,7 +199,6 @@ def display_keywords_and_links(keywords, input_text, selected_language, selected
                 )
                 if new_keywords:
                     st.session_state.keywords_rounds.append(new_keywords)  # Add to session state for history
-                # No need to call st.experimental_rerun as the state change automatically reruns the app
 def image_generation_page():
     st.header("图像生成")
     input_image_prompt = st.text_input("请输入图像生成提示词")
