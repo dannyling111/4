@@ -144,11 +144,31 @@ def generate_keywords_and_links(input_text, language, model, fixed_prompt_append
 
 def display_keywords_and_links(keywords):
     for keyword in keywords:
-        google_search = f"https://www.google.com/search?q={keyword}"
-        youtube_search = f"https://www.youtube.com/results?search_query={keyword}"
-        bilibili_search = f"https://search.bilibili.com/all?keyword={keyword}"
-        st.markdown(f"- **{keyword}**: [Google Search]({google_search}) | [YouTube Search]({youtube_search}) | [Bilibili Search]({bilibili_search})")
-# Page Block 2: Image Generation
+
+def display_keywords_and_links(keywords, input_text, selected_language, selected_text_model, fixed_prompt_append):
+    for keyword in keywords:
+        col1, col2, col3 = st.columns([3, 1, 1])  # Layout with 3 columns
+
+        with col1:
+            st.markdown(f"**{keyword}**")
+        
+        with col2:
+            google_search = f"https://www.google.com/search?q={keyword}"
+            youtube_search = f"https://www.youtube.com/results?search_query={keyword}"
+            bilibili_search = f"https://search.bilibili.com/all?keyword={keyword}"
+            st.markdown(f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})")
+        
+        with col3:
+            if st.button(f"🔄 重新生成 {keyword}", key=keyword):
+                # Use the current keyword as the input and reuse all existing settings
+                regenerated_keywords = generate_keywords_and_links(
+                    input_text=keyword,  # Use current keyword as new input
+                    language=selected_language,  # Reuse existing language setting
+                    model=selected_text_model,  # Reuse existing model setting
+                    fixed_prompt_append=fixed_prompt_append  # Reuse existing prompt append
+                )
+                if regenerated_keywords:
+                    st.write(f"重新生成的关键词: {', '.join(regenerated_keywords)}")
 def image_generation_page():
     st.header("图像生成")
     input_image_prompt = st.text_input("请输入图像生成提示词")
