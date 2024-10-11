@@ -6,5 +6,6 @@ docx
 pytrends
 wordcloud
 matplotlib
+openpyxl
 pillow  # Required for handling images
 asyncio  # Needed for asynchronous tasks
