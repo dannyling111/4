@@ -36,39 +36,16 @@ painting_styles = ["", "油画", "水彩画", "水墨画", "素描", "丙烯画"
                    "毕加索风格", "德加风格", "雷诺阿风格", "米开朗基罗风格", "达利风格", "高更风格", "康定斯基风格", 
                    "塞尚风格", "爱德华·马奈风格", "齐白石风格", "张大千风格", "徐悲鸿风格", "吴冠中风格"]
 
-csv_path = "aisetting.csv"
-aisettings_df = pd.read_csv(csv_path)
+# Load the Excel file (replace the file path with your .xlsx file)
+xlsx_path = "aisetting.xlsx"  # Ensure the correct path to your Excel file
+aisettings_df = pd.read_excel(xlsx_path)
 
 # Extract language and thinking options
 language_options = aisettings_df['a1'].dropna().tolist()
 thinking_options = aisettings_df['a2'].dropna().tolist()
 
 # General-purpose functions
-def generate_keywords_and_links(input_text, language, model):
-    fixed_prompt_append = """
-    Provide a list of 20 most related keywords, in the following format:
-    - Keyword 1
-    - Keyword 2
-    - Keyword 3
-    """
-    final_prompt = f"{input_text}\n{fixed_prompt_append}"
 
-    async def fetch_text_response():
-        message = ProtocolMessage(role="user", content=final_prompt)
-        reply = ""
-        async for partial in get_bot_response(messages=[message], bot_name=model, api_key=api_key):
-            response = json.loads(partial.raw_response["text"])
-            reply += response["text"]
-        return reply
-
-    text_response = asyncio.run(fetch_text_response())
-    if text_response:
-        try:
-            keywords = [line.strip()[2:] for line in text_response.splitlines() if line.startswith("-")]
-            return keywords
-        except Exception as e:
-            st.error(f"Error processing keywords: {str(e)}")
-            return []
 
 def fetch_image_response(image_prompt, model):
     async def fetch():
@@ -115,6 +92,7 @@ def muted_color_func(word, font_size, position, orientation, random_state=None, 
     l = random.randint(40, 50)
     return f"hsl({h}, {s}%, {l}%)"
 
+
 # Page Block 1: Keyword Extraction
 def keyword_extraction_page():
     st.header("关键词提取和搜索链接生成")
@@ -122,12 +100,37 @@ def keyword_extraction_page():
 
     selected_language = st.selectbox("选择语言", language_options)
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
+    
+    # 从a5列读取选项并简化prompt选择逻辑
+    fixed_prompt_options = aisettings_df['a5'].dropna().tolist()
+    selected_fixed_prompt = st.selectbox("选择关键词生成模板", fixed_prompt_options)
 
     if st.button("生成关键词和链接"):
         with st.spinner("正在生成关键词和链接..."):
-            keywords = generate_keywords_and_links(input_text_prompt, selected_language, selected_text_model)
+            keywords = generate_keywords_and_links(input_text_prompt, selected_language, selected_text_model, selected_fixed_prompt)
             if keywords:
                 display_keywords_and_links(keywords)
+
+# 修改后的generate_keywords_and_links函数
+def generate_keywords_and_links(input_text, language, model, fixed_prompt_append):
+    final_prompt = f"{input_text}\n{fixed_prompt_append}"
+
+    async def fetch_text_response():
+        message = ProtocolMessage(role="user", content=final_prompt)
+        reply = ""
+        async for partial in get_bot_response(messages=[message], bot_name=model, api_key=api_key):
+            response = json.loads(partial.raw_response["text"])
+            reply += response["text"]
+        return reply
+
+    text_response = asyncio.run(fetch_text_response())
+    if text_response:
+        try:
+            keywords = [line.strip()[2:] for line in text_response.splitlines() if line.startswith("-")]
+            return keywords
+        except Exception as e:
+            st.error(f"Error processing keywords: {str(e)}")
+            return []
 
 def display_keywords_and_links(keywords):
     for keyword in keywords:
@@ -135,7 +138,6 @@ def display_keywords_and_links(keywords):
         youtube_search = f"https://www.youtube.com/results?search_query={keyword}"
         bilibili_search = f"https://search.bilibili.com/all?keyword={keyword}"
         st.markdown(f"- **{keyword}**: [Google Search]({google_search}) | [YouTube Search]({youtube_search}) | [Bilibili Search]({bilibili_search})")
-
 # Page Block 2: Image Generation
 def image_generation_page():
     st.header("图像生成")
