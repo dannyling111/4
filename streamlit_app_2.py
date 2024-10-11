@@ -96,20 +96,29 @@ def muted_color_func(word, font_size, position, orientation, random_state=None, 
 # Page Block 1: Keyword Extraction
 def keyword_extraction_page():
     st.header("关键词提取和搜索链接生成")
-    input_text_prompt = st.text_input("请输入文本生成提示词")
 
+    input_text_prompt = st.text_input("请输入文本生成提示词")
     selected_language = st.selectbox("选择语言", language_options)
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
-    
-    # 从a5列读取选项并简化prompt选择逻辑
     fixed_prompt_options = aisettings_df['a5'].dropna().tolist()
     selected_fixed_prompt = st.selectbox("选择关键词生成模板", fixed_prompt_options)
 
+    # Initialize session state for keywords
+    if 'keywords' not in st.session_state:
+        st.session_state.keywords = []  # Initialize keywords as an empty list
+
     if st.button("生成关键词和链接"):
         with st.spinner("正在生成关键词和链接..."):
-            keywords = generate_keywords_and_links(input_text_prompt, selected_language, selected_text_model, selected_fixed_prompt)
-            if keywords:
-                display_keywords_and_links(keywords, input_text_prompt, selected_language, selected_text_model, selected_fixed_prompt)
+            # Generate keywords and store them in session state
+            st.session_state.keywords = generate_keywords_and_links(
+                input_text_prompt, selected_language, selected_text_model, selected_fixed_prompt
+            )
+
+    # Display keywords if they exist in session state
+    if st.session_state.keywords:
+        display_keywords_and_links(st.session_state.keywords, input_text_prompt, selected_language, selected_text_model, selected_fixed_prompt)
+
+
 
 # 修改后的generate_keywords_and_links函数
 def generate_keywords_and_links(input_text, language, model, fixed_prompt_append):
