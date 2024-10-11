@@ -97,7 +97,13 @@ def muted_color_func(word, font_size, position, orientation, random_state=None, 
 def keyword_extraction_page():
     st.header("关键词提取和搜索链接生成")
 
-    input_text_prompt = st.text_input("请输入文本生成提示词")
+    # Check if we need to load a keyword as input (from a previous keyword click)
+    if 'input_text_prompt' not in st.session_state:
+        st.session_state.input_text_prompt = ''  # Initialize if not present
+
+    # Set the input text from session state (this could come from a keyword button click)
+    input_text_prompt = st.text_input("请输入文本生成提示词", value=st.session_state.input_text_prompt)
+    
     selected_language = st.selectbox("选择语言", language_options)
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
     fixed_prompt_options = aisettings_df['a5'].dropna().tolist()
@@ -121,6 +127,7 @@ def keyword_extraction_page():
     # Button to clear results
     if st.button("清除结果"):
         st.session_state.keywords_rounds = []  # Clear all previous rounds of keywords
+        st.session_state.input_text_prompt = ''  # Clear the input text
         st.success("所有结果已清除！")
 
     # Display all rounds of keywords
@@ -179,15 +186,19 @@ def display_keywords_and_links(keywords, input_text, selected_language, selected
         
         with col3:
             if st.button(f"🔄 重新生成 {keyword}", key=keyword):
-                # Use the current keyword as the input and reuse all existing settings
-                regenerated_keywords = generate_keywords_and_links(
+                # Use the clicked keyword as the new input and regenerate
+                st.session_state.input_text_prompt = keyword
+
+                # Trigger the function again with the new input (run the whole page again)
+                new_keywords = generate_keywords_and_links(
                     input_text=keyword,  # Use current keyword as new input
                     language=selected_language,  # Reuse existing language setting
                     model=selected_text_model,  # Reuse existing model setting
                     fixed_prompt_append=fixed_prompt_append  # Reuse existing prompt append
                 )
-                if regenerated_keywords:
-                    st.write(f"重新生成的关键词: {', '.join(regenerated_keywords)}")
+                if new_keywords:
+                    st.session_state.keywords_rounds.append(new_keywords)  # Add to session state for history
+                st.experimental_rerun()  # Rerun the page to update the output
 def image_generation_page():
     st.header("图像生成")
     input_image_prompt = st.text_input("请输入图像生成提示词")
