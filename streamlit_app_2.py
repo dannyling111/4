@@ -185,11 +185,11 @@ def display_keywords_and_links(keywords, input_text, selected_language, selected
             st.markdown(f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})")
         
         with col3:
-            if st.button(f"🔄 重新生成 {keyword}", key=keyword):
+            if st.button(f"🔄 重新生成 {keyword}", key=f"regen_{keyword}"):
                 # Use the clicked keyword as the new input and regenerate
                 st.session_state.input_text_prompt = keyword
 
-                # Trigger the function again with the new input (run the whole page again)
+                # Generate new keywords from the clicked keyword (without rerun)
                 new_keywords = generate_keywords_and_links(
                     input_text=keyword,  # Use current keyword as new input
                     language=selected_language,  # Reuse existing language setting
@@ -198,7 +198,7 @@ def display_keywords_and_links(keywords, input_text, selected_language, selected
                 )
                 if new_keywords:
                     st.session_state.keywords_rounds.append(new_keywords)  # Add to session state for history
-                st.experimental_rerun()  # Rerun the page to update the output
+                # No need to call st.experimental_rerun as the state change automatically reruns the app
 def image_generation_page():
     st.header("图像生成")
     input_image_prompt = st.text_input("请输入图像生成提示词")
