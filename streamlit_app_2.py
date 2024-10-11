@@ -270,10 +270,11 @@ def analysis_generation_page():
 
     # Set the input text from session state (this could come from a keyword button click)
     input_text_prompt_analysis = st.text_input("请输入文本生成提示词", value=st.session_state.input_text_prompt_analysis)
-    
+
+    # 添加语言选择下拉框
     selected_language = st.selectbox("选择语言", language_options)
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
-    
+
     # Use Excel file's a6 column for the fixed prompts
     fixed_prompt_options_a6 = aisettings_df['a6'].dropna().tolist()
     selected_fixed_prompt_a6 = st.selectbox("选择关键词生成模板", fixed_prompt_options_a6)
@@ -314,6 +315,7 @@ def analysis_generation_page():
                 st.subheader(f"分析文章：第 {round_idx} 轮")
                 st.write(round_data['content'])
 
+
 # Display keywords and provide both buttons for rerun and generating an analysis article
 def display_analysis_keywords(keywords, selected_language, selected_text_model, fixed_prompt_append, round_idx):
     for idx, keyword in enumerate(keywords):
@@ -335,7 +337,7 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
             article_key = f"generate_article_{round_idx}_{idx}_{keyword}"
             if st.button(f"📝 生成分析文章", key=article_key):
                 # Use the clicked keyword to generate an analysis article
-                analysis_prompt = f"写一篇关于{keyword}的分析文章。"
+                analysis_prompt = f"写一篇关于{keyword}的分析文章。语言: {selected_language}"  # Include language in prompt
                 analysis_article = fetch_text_response(analysis_prompt, selected_text_model)
 
                 if analysis_article:
@@ -370,6 +372,9 @@ def fetch_text_response(message_content, model):
 
 # Sidebar for navigation and main app structure
 def main():
+    st.sidebar.title("导航")
+    page = st.sidebar.selectbox("选择页面", ["关键词提取", "词云生成", "图像生成", "文本生成", "学习日语", "主题分析生成"])
+
     if page == "关键词提取":
         keyword_extraction_page()
     elif page == "词云生成":
@@ -382,10 +387,6 @@ def main():
         japanese_learning_page()
     elif page == "主题分析生成":  # Newly added page route
         analysis_generation_page()
-
-# Add the new page to the sidebar navigation
-st.sidebar.title("导航")
-page = st.sidebar.selectbox("选择页面", ["关键词提取", "词云生成", "图像生成", "文本生成", "学习日语", "主题分析生成"])
 
 # Run the app
 if __name__ == "__main__":
