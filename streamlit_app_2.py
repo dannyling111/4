@@ -109,7 +109,7 @@ def keyword_extraction_page():
         with st.spinner("正在生成关键词和链接..."):
             keywords = generate_keywords_and_links(input_text_prompt, selected_language, selected_text_model, selected_fixed_prompt)
             if keywords:
-                display_keywords_and_links(keywords)
+                display_keywords_and_links(keywords, input_text_prompt, selected_language, selected_text_model, selected_fixed_prompt)
 
 # 修改后的generate_keywords_and_links函数
 def generate_keywords_and_links(input_text, language, model, fixed_prompt_append):
