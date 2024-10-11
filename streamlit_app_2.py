@@ -142,9 +142,6 @@ def generate_keywords_and_links(input_text, language, model, fixed_prompt_append
             st.error(f"Error processing keywords: {str(e)}")
             return []
 
-def display_keywords_and_links(keywords):
-    for keyword in keywords:
-
 def display_keywords_and_links(keywords, input_text, selected_language, selected_text_model, fixed_prompt_append):
     for keyword in keywords:
         col1, col2, col3 = st.columns([3, 1, 1])  # Layout with 3 columns
