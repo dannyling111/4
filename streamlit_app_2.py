@@ -323,24 +323,28 @@ def analysis_generation_page():
 
 
 # Display keywords and provide both buttons for rerun and generating an analysis article
-def display_analysis_keywords(keywords, selected_language, selected_text_model, fixed_prompt_append, round_idx, generate_links):
+def display_analysis_keywords(keywords, selected_language, selected_text_model, fixed_prompt_append, round_idx):
     for idx, keyword in enumerate(keywords):
-        col1, col2, col3 = st.columns([3, 2, 1])  # Layout with 3 columns: keyword, rerun button, and analysis button
+        col1, col2 = st.columns([3, 2])  # Layout with 2 columns: keyword, dropdown action
 
         with col1:
             st.markdown(f"**{keyword}**")
 
-        if generate_links:
-            with col2:
-                google_search = f"https://www.google.com/search?q={keyword}"
-                youtube_search = f"https://www.youtube.com/results?search_query={keyword}"
-                bilibili_search = f"https://search.bilibili.com/all?keyword={keyword}"
-                st.markdown(f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})")
+        with col2:
+            # Create a selectbox to offer actions (with unique keys)
+            action_key = f"action_select_{round_idx}_{idx}_{keyword}"
+            action = st.selectbox(
+                f"操作选择 - {keyword}",  # Description label for the selectbox
+                options=["请选择操作", "🔄 重新生成关键词", "📝 生成分析文章"],
+                key=action_key
+            )
 
-        with col3:
-            # Ensure unique key for the analysis article button
-            article_key = f"generate_article_{round_idx}_{idx}_{keyword}"
-            if st.button(f"📝 生成分析文章", key=article_key):
+            # Handle the selected action
+            if action == "🔄 重新生成关键词":
+                # Rerun the code with this keyword, appending results to previous outputs
+                rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append)
+
+            elif action == "📝 生成分析文章":
                 # Use the clicked keyword to generate an analysis article
                 analysis_prompt = f"写一篇关于{keyword}的分析文章。语言: {selected_language}"  # Include language in prompt
                 analysis_article = fetch_text_response(analysis_prompt, selected_text_model)
@@ -352,6 +356,7 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                         'content': analysis_article
                     })
 
+
 # Function to handle rerunning the code with the selected keyword
 def rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append):
     # Generate new keywords or outputs using the selected keyword
@@ -362,7 +367,6 @@ def rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_pr
             'type': 'keywords',
             'content': new_keywords
         })
-
 # Fetch the analysis article using the API call
 def fetch_text_response(message_content, model):
     async def fetch():
