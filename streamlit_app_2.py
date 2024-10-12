@@ -324,37 +324,64 @@ def analysis_generation_page():
 
 # Display keywords and provide both buttons for rerun and generating an analysis article
 def display_analysis_keywords(keywords, selected_language, selected_text_model, fixed_prompt_append, round_idx):
+    # Debug output to check parameter values
+    st.write(f"Keywords: {keywords}")
+    st.write(f"Selected language: {selected_language}")
+    st.write(f"Text model: {selected_text_model}")
+    st.write(f"Fixed prompt append: {fixed_prompt_append}")
+    st.write(f"Round index: {round_idx}")
+    
+    # Check if keywords are non-empty and correct
+    if not keywords:
+        st.error("No keywords provided.")
+        return
+
     for idx, keyword in enumerate(keywords):
-        col1, col2 = st.columns([3, 2])  # Layout with 2 columns: keyword, dropdown action
+        col1, col2 = st.columns([3, 2])
 
         with col1:
             st.markdown(f"**{keyword}**")
 
         with col2:
-            # Create a selectbox to offer actions (with unique keys)
+            # Create a selectbox with options
             action_key = f"action_select_{round_idx}_{idx}_{keyword}"
             action = st.selectbox(
-                f"操作选择 - {keyword}",  # Description label for the selectbox
+                f"操作选择 - {keyword}",
                 options=["请选择操作", "🔄 重新生成关键词", "📝 生成分析文章"],
                 key=action_key
             )
 
+            # Debug output for selected action
+            st.write(f"Selected action for {keyword}: {action}")
+
             # Handle the selected action
             if action == "🔄 重新生成关键词":
-                # Rerun the code with this keyword, appending results to previous outputs
+                st.write(f"Rerunning keyword: {keyword}")
                 rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append)
 
             elif action == "📝 生成分析文章":
-                # Use the clicked keyword to generate an analysis article
-                analysis_prompt = f"写一篇关于{keyword}的分析文章。语言: {selected_language}"  # Include language in prompt
+                st.write(f"Generating analysis for {keyword}")
+                analysis_prompt = f"写一篇关于{keyword}的分析文章。语言: {selected_language}"
                 analysis_article = fetch_text_response(analysis_prompt, selected_text_model)
 
                 if analysis_article:
-                    # Append only the analysis article to the session state, and DO NOT include any buttons.
                     st.session_state.analysis_rounds.append({
                         'type': 'article',
                         'content': analysis_article
                     })
+
+# Debugging the rerun_with_keyword function
+def rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append):
+    st.write(f"Rerunning with keyword: {keyword}")
+    try:
+        with st.spinner(f"正在使用关键词 {keyword} 重新生成..."):
+            new_keywords = generate_keywords_and_links(keyword, selected_language, selected_text_model, fixed_prompt_append)
+            st.session_state.analysis_rounds.append({
+                'type': 'keywords',
+                'content': new_keywords
+            })
+    except Exception as e:
+        st.error(f"Error during rerun with keyword: {e}")
 
 
 # Function to handle rerunning the code with the selected keyword
