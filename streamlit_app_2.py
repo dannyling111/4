@@ -266,6 +266,8 @@ def wordcloud_generation_page():
 
 
 
+import urllib.parse
+
 def display_analysis_keywords(keywords, selected_language, selected_text_model, fixed_prompt_append, round_idx, generate_links):
     if not keywords:
         st.error("No keywords provided.")
@@ -282,7 +284,7 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                         'content': new_keywords,
                         'generate_links': generate_links
                     })
-                    st.experimental_rerun()
+                    st.session_state.trigger_rerun = True
         elif action == "📝 生成分析文章":
             with st.spinner(f"正在生成关于 {keyword} 的分析文章..."):
                 analysis_prompt = f"写一篇关于{keyword}的分析文章。语言: {selected_language}"
@@ -292,7 +294,7 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                         'type': 'article',
                         'content': analysis_article
                     })
-                    st.experimental_rerun()
+                    st.session_state.trigger_rerun = True
 
     for idx, keyword in enumerate(keywords):
         col1, col2 = st.columns([3, 2])
@@ -322,6 +324,8 @@ def analysis_generation_page():
         st.session_state.input_text_prompt_analysis = ''
     if 'analysis_rounds' not in st.session_state:
         st.session_state.analysis_rounds = []
+    if 'trigger_rerun' not in st.session_state:
+        st.session_state.trigger_rerun = False
 
     input_text_prompt_analysis = st.text_input(
         "请输入文本生成提示词", value=st.session_state.input_text_prompt_analysis)
@@ -346,15 +350,15 @@ def analysis_generation_page():
                         'content': new_analysis_keywords,
                         'generate_links': generate_links
                     })
-                    st.experimental_rerun()
+                    st.session_state.trigger_rerun = True
         else:
             st.warning("请输入文本生成提示词！")
 
     if st.button("清除结果"):
         st.session_state.analysis_rounds = []
         st.session_state.input_text_prompt_analysis = ''
+        st.session_state.trigger_rerun = True
         st.success("所有结果已清除！")
-        st.experimental_rerun()
 
     for round_idx, round_data in enumerate(st.session_state.analysis_rounds):
         if round_data['type'] == 'keywords':
@@ -370,6 +374,11 @@ def analysis_generation_page():
         elif round_data['type'] == 'article':
             st.subheader(f"分析文章：第 {round_idx + 1} 轮")
             st.write(round_data['content'])
+
+    # Check if a rerun is needed and reset the trigger
+    if st.session_state.trigger_rerun:
+        st.session_state.trigger_rerun = False
+        st.rerun()
 
 def rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append):
     with st.spinner(f"正在使用关键词 {keyword} 重新生成..."):
