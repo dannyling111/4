@@ -264,113 +264,74 @@ def wordcloud_generation_page():
 def analysis_generation_page():
     st.header("主题分析生成")
 
-    # Initialize session state variables if they don't exist
     if 'input_text_prompt_analysis' not in st.session_state:
         st.session_state.input_text_prompt_analysis = ''
 
-    # Set the input text from session state (this could come from a keyword button click)
     input_text_prompt_analysis = st.text_input(
         "请输入文本生成提示词", value=st.session_state.input_text_prompt_analysis)
 
-    # Language and model selection dropdowns
     selected_language = st.selectbox("选择语言", language_options)
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
 
-    # Fixed prompts from the a6 column of your dataframe
     fixed_prompt_options_a6 = aisettings_df['a6'].dropna().tolist()
     selected_fixed_prompt_a6 = st.selectbox("选择关键词生成模板", fixed_prompt_options_a6)
 
-    # Option to generate search links (checkbox)
-    generate_links = st.checkbox("是否生成关键词相关的搜索链接", value=True)
-
-    # Initialize the rounds of analysis if not already in session state
     if 'analysis_rounds' not in st.session_state:
         st.session_state.analysis_rounds = []
 
-    # Button to generate a new round of keywords
     if st.button("生成关键词"):
-        if input_text_prompt_analysis.strip():  # Check if there's input text
+        if input_text_prompt_analysis.strip():
             with st.spinner("正在生成关键词..."):
-                # Call your function to generate keywords and links
                 new_analysis_keywords = generate_keywords_and_links(
                     input_text_prompt_analysis, selected_language, selected_text_model, selected_fixed_prompt_a6)
 
-                # Append new round of keywords if generated successfully
                 if new_analysis_keywords:
                     st.session_state.analysis_rounds.append({
                         'type': 'keywords',
                         'content': new_analysis_keywords,
-                        'generate_links': generate_links
                     })
         else:
             st.warning("请输入文本生成提示词！")
 
-    # Button to clear all generated results
     if st.button("清除结果"):
         st.session_state.analysis_rounds = []
         st.session_state.input_text_prompt_analysis = ''
         st.success("所有结果已清除！")
 
-    # Display all the rounds of generated analysis
     if st.session_state.analysis_rounds:
         for round_idx, round_data in enumerate(st.session_state.analysis_rounds, 1):
             if round_data['type'] == 'keywords':
                 st.subheader(f"第 {round_idx} 轮生成的主题关键词")
-                # Call the function to display keywords and pass necessary arguments
                 display_analysis_keywords(
                     round_data['content'], 
                     selected_language, 
                     selected_text_model, 
                     selected_fixed_prompt_a6, 
-                    round_idx, 
-                    round_data['generate_links']
+                    round_idx
                 )
             elif round_data['type'] == 'article':
                 st.subheader(f"分析文章：第 {round_idx} 轮")
                 st.write(round_data['content'])
 
 
-
 # Display keywords and provide both buttons for rerun and generating an analysis article
-# Display keywords and provide both buttons for rerun and generating an analysis article
-def display_analysis_keywords(keywords, selected_language, selected_text_model, fixed_prompt_append, round_idx, generate_links):
-    # Debug output to check parameter values
-    st.write(f"Keywords: {keywords}")
-    st.write(f"Selected language: {selected_language}")
-    st.write(f"Text model: {selected_text_model}")
-    st.write(f"Fixed prompt append: {fixed_prompt_append}")
-    st.write(f"Round index: {round_idx}")
-    
-    # Check if keywords are non-empty and correct
+def display_analysis_keywords(keywords, selected_language, selected_text_model, fixed_prompt_append, round_idx):
     if not keywords:
         st.error("No keywords provided.")
         return
 
     for idx, keyword in enumerate(keywords):
-        col1, col2 = st.columns([3, 2])
+        col1, col2, col3 = st.columns([3, 2, 2])
 
         with col1:
             st.markdown(f"**{keyword}**")
 
         with col2:
-            # Create a selectbox with options
-            action_key = f"action_select_{round_idx}_{idx}_{keyword}"
-            action = st.selectbox(
-                f"操作选择 - {keyword}",
-                options=["请选择操作", "🔄 重新生成关键词", "📝 生成分析文章"],
-                key=action_key
-            )
-
-            # Debug output for selected action
-            st.write(f"Selected action for {keyword}: {action}")
-
-            # Handle the selected action
-            if action == "🔄 重新生成关键词":
-                st.write(f"Rerunning keyword: {keyword}")
+            if st.button(f"🔄 重新生成关键词", key=f"rerun_{round_idx}_{idx}"):
                 rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append)
 
-            elif action == "📝 生成分析文章":
-                st.write(f"Generating analysis for {keyword}")
+        with col3:
+            if st.button(f"📝 生成分析文章", key=f"analyze_{round_idx}_{idx}"):
                 analysis_prompt = f"写一篇关于{keyword}的分析文章。语言: {selected_language}"
                 analysis_article = fetch_text_response(analysis_prompt, selected_text_model)
 
@@ -381,26 +342,9 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                     })
 
 
-# Debugging the rerun_with_keyword function
 def rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append):
-    st.write(f"Rerunning with keyword: {keyword}")
-    try:
-        with st.spinner(f"正在使用关键词 {keyword} 重新生成..."):
-            new_keywords = generate_keywords_and_links(keyword, selected_language, selected_text_model, fixed_prompt_append)
-            st.session_state.analysis_rounds.append({
-                'type': 'keywords',
-                'content': new_keywords
-            })
-    except Exception as e:
-        st.error(f"Error during rerun with keyword: {e}")
-
-
-# Function to handle rerunning the code with the selected keyword
-def rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append):
-    # Generate new keywords or outputs using the selected keyword
     with st.spinner(f"正在使用关键词 {keyword} 重新生成..."):
         new_keywords = generate_keywords_and_links(keyword, selected_language, selected_text_model, fixed_prompt_append)
-        # Append the new results to the previous output
         st.session_state.analysis_rounds.append({
             'type': 'keywords',
             'content': new_keywords
