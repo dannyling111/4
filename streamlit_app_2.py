@@ -263,11 +263,15 @@ def wordcloud_generation_page():
                 google_news_link = f"https://news.google.com/search?q={keyword}"
                 youtube_link = f"https://www.youtube.com/results?search_query={keyword}"
                 st.markdown(f"- {keyword}: [Google Search]({google_search_link}) | [Google News]({google_news_link}) | [YouTube]({youtube_link})")
+import urllib.parse
+
 def analysis_generation_page():
     st.header("主题分析生成")
 
     if 'input_text_prompt_analysis' not in st.session_state:
         st.session_state.input_text_prompt_analysis = ''
+    if 'analysis_rounds' not in st.session_state:
+        st.session_state.analysis_rounds = []
 
     input_text_prompt_analysis = st.text_input(
         "请输入文本生成提示词", value=st.session_state.input_text_prompt_analysis)
@@ -279,9 +283,6 @@ def analysis_generation_page():
     selected_fixed_prompt_a6 = st.selectbox("选择关键词生成模板", fixed_prompt_options_a6)
 
     generate_links = st.checkbox("是否生成关键词相关的搜索链接", value=True)
-
-    if 'analysis_rounds' not in st.session_state:
-        st.session_state.analysis_rounds = []
 
     if st.button("生成关键词"):
         if input_text_prompt_analysis.strip():
@@ -303,42 +304,25 @@ def analysis_generation_page():
         st.session_state.input_text_prompt_analysis = ''
         st.success("所有结果已清除！")
 
-    if st.session_state.analysis_rounds:
-        for round_idx, round_data in enumerate(st.session_state.analysis_rounds, 1):
-            if round_data['type'] == 'keywords':
-                st.subheader(f"第 {round_idx} 轮生成的主题关键词")
-                display_analysis_keywords(
-                    round_data['content'], 
-                    selected_language, 
-                    selected_text_model, 
-                    selected_fixed_prompt_a6, 
-                    round_idx, 
-                    round_data['generate_links']
-                )
-            elif round_data['type'] == 'article':
-                st.subheader(f"分析文章：第 {round_idx} 轮")
-                st.write(round_data['content'])
+    for round_idx, round_data in enumerate(st.session_state.analysis_rounds):
+        if round_data['type'] == 'keywords':
+            st.subheader(f"第 {round_idx + 1} 轮生成的主题关键词")
+            display_analysis_keywords(
+                round_data['content'], 
+                selected_language, 
+                selected_text_model, 
+                selected_fixed_prompt_a6, 
+                round_idx, 
+                round_data['generate_links']
+            )
+        elif round_data['type'] == 'article':
+            st.subheader(f"分析文章：第 {round_idx + 1} 轮")
+            st.write(round_data['content'])
 
 def display_analysis_keywords(keywords, selected_language, selected_text_model, fixed_prompt_append, round_idx, generate_links):
     if not keywords:
         st.error("No keywords provided.")
         return
-
-    def on_select_action():
-        action_key = st.session_state.last_active_selectbox
-        keyword = st.session_state.last_active_keyword
-        action = st.session_state[action_key]
-        
-        if action == "🔄 重新生成关键词":
-            rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append)
-        elif action == "📝 生成分析文章":
-            analysis_prompt = f"写一篇关于{keyword}的分析文章。语言: {selected_language}"
-            analysis_article = fetch_text_response(analysis_prompt, selected_text_model)
-            if analysis_article:
-                st.session_state.analysis_rounds.append({
-                    'type': 'article',
-                    'content': analysis_article
-                })
 
     for idx, keyword in enumerate(keywords):
         col1, col2 = st.columns([3, 2])
@@ -353,16 +337,36 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                 st.markdown(f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})")
 
         with col2:
-            action_key = f"action_select_{round_idx}_{idx}_{keyword}"
+            action_key = f"action_select_{round_idx}_{idx}"
             action = st.selectbox(
                 "选择操作",
                 options=["请选择操作", "🔄 重新生成关键词", "📝 生成分析文章"],
                 key=action_key,
-                on_change=on_select_action
             )
-            # Store the last active selectbox and keyword
-            st.session_state.last_active_selectbox = action_key
-            st.session_state.last_active_keyword = keyword
+            
+            if action == "🔄 重新生成关键词":
+                if st.button("执行", key=f"rerun_{round_idx}_{idx}"):
+                    with st.spinner(f"正在使用关键词 {keyword} 重新生成..."):
+                        new_keywords = generate_keywords_and_links(keyword, selected_language, selected_text_model, fixed_prompt_append)
+                        if new_keywords:
+                            st.session_state.analysis_rounds.append({
+                                'type': 'keywords',
+                                'content': new_keywords,
+                                'generate_links': generate_links
+                            })
+                            st.experimental_rerun()
+            
+            elif action == "📝 生成分析文章":
+                if st.button("执行", key=f"analyze_{round_idx}_{idx}"):
+                    with st.spinner(f"正在生成关于 {keyword} 的分析文章..."):
+                        analysis_prompt = f"写一篇关于{keyword}的分析文章。语言: {selected_language}"
+                        analysis_article = fetch_text_response(analysis_prompt, selected_text_model)
+                        if analysis_article:
+                            st.session_state.analysis_rounds.append({
+                                'type': 'article',
+                                'content': analysis_article
+                            })
+                            st.experimental_rerun()
 
 def rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append):
     with st.spinner(f"正在使用关键词 {keyword} 重新生成..."):
