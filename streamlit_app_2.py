@@ -322,8 +322,20 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
         st.error("No keywords provided.")
         return
 
+    def on_select_action(keyword, action, selected_language, selected_text_model, fixed_prompt_append):
+        if action == "🔄 重新生成关键词":
+            rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append)
+        elif action == "📝 生成分析文章":
+            analysis_prompt = f"写一篇关于{keyword}的分析文章。语言: {selected_language}"
+            analysis_article = fetch_text_response(analysis_prompt, selected_text_model)
+            if analysis_article:
+                st.session_state.analysis_rounds.append({
+                    'type': 'article',
+                    'content': analysis_article
+                })
+
     for idx, keyword in enumerate(keywords):
-        col1, col2, col3 = st.columns([3, 2, 2])
+        col1, col2 = st.columns([3, 2])
 
         with col1:
             st.markdown(f"**{keyword}**")
@@ -338,22 +350,10 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
             action = st.selectbox(
                 "选择操作",
                 options=["请选择操作", "🔄 重新生成关键词", "📝 生成分析文章"],
-                key=action_key
+                key=action_key,
+                on_change=on_select_action,
+                args=(keyword, st.session_state[action_key], selected_language, selected_text_model, fixed_prompt_append)
             )
-
-        with col3:
-            if action == "🔄 重新生成关键词":
-                if st.button("执行", key=f"execute_rerun_{round_idx}_{idx}"):
-                    rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append)
-            elif action == "📝 生成分析文章":
-                if st.button("执行", key=f"execute_analyze_{round_idx}_{idx}"):
-                    analysis_prompt = f"写一篇关于{keyword}的分析文章。语言: {selected_language}"
-                    analysis_article = fetch_text_response(analysis_prompt, selected_text_model)
-                    if analysis_article:
-                        st.session_state.analysis_rounds.append({
-                            'type': 'article',
-                            'content': analysis_article
-                        })
 
 def rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append):
     with st.spinner(f"正在使用关键词 {keyword} 重新生成..."):
@@ -364,6 +364,7 @@ def rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_pr
                 'content': new_keywords,
                 'generate_links': True  # Assuming we want links for rerun keywords
             })
+          
 # Fetch the analysis article using the API call
 def fetch_text_response(message_content, model):
     async def fetch():
