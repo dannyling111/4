@@ -383,6 +383,36 @@ def fetch_text_response(message_content, model):
 
     return asyncio.run(fetch())
 
+
+def japanese_learning_page():
+    st.header("学习日语")
+    input_text_prompt = st.text_input("请输入与学习日语相关的提示词")
+    
+    # Extract options for a4 column (附加项) and change to single select (单选)
+    selected_a4_item = st.selectbox("选择附加项 (a4 列)", [''] + aisettings_df['a4'].dropna().tolist())  # 改为单选
+
+    # Select language (单选)
+    selected_language = st.selectbox("选择语言", [''] + language_options)  # 单选语言
+    
+    # Select text generation model
+    selected_text_model = st.selectbox("选择文本生成模型", text_bots)
+
+    # Construct final prompt
+    message_content = input_text_prompt
+    if selected_language:
+        message_content += f"\nLanguage: {selected_language}"
+    if selected_a4_item:
+        message_content += f"\n附加项: {selected_a4_item}"  # 单选附加项
+    
+    st.subheader("AI 生成的最终提示词：")
+    st.write(f"**Prompt Input:**\n{message_content}")
+
+    if st.button("生成文本"):
+        with st.spinner("正在生成文本..."):
+            text_response = fetch_text_response(message_content, selected_text_model)
+            if text_response:
+                st.success("生成的文本：")
+                st.write(text_response)
 # Sidebar for navigation and main app structure
 def main():
     st.sidebar.title("导航")
