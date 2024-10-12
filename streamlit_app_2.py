@@ -322,7 +322,11 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
         st.error("No keywords provided.")
         return
 
-    def on_select_action(keyword, action, selected_language, selected_text_model, fixed_prompt_append):
+    def on_select_action():
+        action_key = st.session_state.last_active_selectbox
+        keyword = st.session_state.last_active_keyword
+        action = st.session_state[action_key]
+        
         if action == "🔄 重新生成关键词":
             rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append)
         elif action == "📝 生成分析文章":
@@ -351,9 +355,11 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                 "选择操作",
                 options=["请选择操作", "🔄 重新生成关键词", "📝 生成分析文章"],
                 key=action_key,
-                on_change=on_select_action,
-                args=(keyword, st.session_state[action_key], selected_language, selected_text_model, fixed_prompt_append)
+                on_change=on_select_action
             )
+            # Store the last active selectbox and keyword
+            st.session_state.last_active_selectbox = action_key
+            st.session_state.last_active_keyword = keyword
 
 def rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append):
     with st.spinner(f"正在使用关键词 {keyword} 重新生成..."):
