@@ -264,57 +264,66 @@ def wordcloud_generation_page():
 def analysis_generation_page():
     st.header("主题分析生成")
 
-    # Check if we need to load a keyword as input (from a previous keyword click)
+    # Initialize session state variables if they don't exist
     if 'input_text_prompt_analysis' not in st.session_state:
-        st.session_state.input_text_prompt_analysis = ''  # Initialize if not present
+        st.session_state.input_text_prompt_analysis = ''
 
     # Set the input text from session state (this could come from a keyword button click)
-    input_text_prompt_analysis = st.text_input("请输入文本生成提示词", value=st.session_state.input_text_prompt_analysis)
+    input_text_prompt_analysis = st.text_input(
+        "请输入文本生成提示词", value=st.session_state.input_text_prompt_analysis)
 
-    # 添加语言选择下拉框
+    # Language and model selection dropdowns
     selected_language = st.selectbox("选择语言", language_options)
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
 
-    # Use Excel file's a6 column for the fixed prompts
+    # Fixed prompts from the a6 column of your dataframe
     fixed_prompt_options_a6 = aisettings_df['a6'].dropna().tolist()
     selected_fixed_prompt_a6 = st.selectbox("选择关键词生成模板", fixed_prompt_options_a6)
 
-    # 打勾选择是否生成搜索链接，默认勾选
+    # Option to generate search links (checkbox)
     generate_links = st.checkbox("是否生成关键词相关的搜索链接", value=True)
 
-    # Initialize session state to hold multiple rounds of generation
+    # Initialize the rounds of analysis if not already in session state
     if 'analysis_rounds' not in st.session_state:
-        st.session_state.analysis_rounds = []  # Empty list to hold each round of output
+        st.session_state.analysis_rounds = []
 
-    # Button to generate new round of outputs (keywords)
+    # Button to generate a new round of keywords
     if st.button("生成关键词"):
-        with st.spinner("正在生成关键词..."):
-            # Generate new keywords using a6 column
-            new_analysis_keywords = generate_keywords_and_links(
-                input_text_prompt_analysis, selected_language, selected_text_model, selected_fixed_prompt_a6
-            )
+        if input_text_prompt_analysis.strip():  # Check if there's input text
+            with st.spinner("正在生成关键词..."):
+                # Call your function to generate keywords and links
+                new_analysis_keywords = generate_keywords_and_links(
+                    input_text_prompt_analysis, selected_language, selected_text_model, selected_fixed_prompt_a6)
 
-            # Append the new keywords to session state (multiple rounds of keywords)
-            st.session_state.analysis_rounds.append({
-                'type': 'keywords',
-                'content': new_analysis_keywords,
-                'generate_links': generate_links  # 保存打勾状态
-            })
+                # Append new round of keywords if generated successfully
+                if new_analysis_keywords:
+                    st.session_state.analysis_rounds.append({
+                        'type': 'keywords',
+                        'content': new_analysis_keywords,
+                        'generate_links': generate_links
+                    })
+        else:
+            st.warning("请输入文本生成提示词！")
 
-    # Button to clear results
+    # Button to clear all generated results
     if st.button("清除结果"):
-        st.session_state.analysis_rounds = []  # Clear all previous rounds of keywords
-        st.session_state.input_text_prompt_analysis = ''  # Clear the input text
+        st.session_state.analysis_rounds = []
+        st.session_state.input_text_prompt_analysis = ''
         st.success("所有结果已清除！")
 
-    # Display all rounds of generated keywords or items
+    # Display all the rounds of generated analysis
     if st.session_state.analysis_rounds:
         for round_idx, round_data in enumerate(st.session_state.analysis_rounds, 1):
             if round_data['type'] == 'keywords':
                 st.subheader(f"第 {round_idx} 轮生成的主题关键词")
-                # 传递是否生成链接的选项
+                # Call the function to display keywords and pass necessary arguments
                 display_analysis_keywords(
-                    round_data['content'], selected_language, selected_text_model, selected_fixed_prompt_a6, round_idx, round_data['generate_links']
+                    round_data['content'], 
+                    selected_language, 
+                    selected_text_model, 
+                    selected_fixed_prompt_a6, 
+                    round_idx, 
+                    round_data['generate_links']
                 )
             elif round_data['type'] == 'article':
                 st.subheader(f"分析文章：第 {round_idx} 轮")
@@ -323,7 +332,8 @@ def analysis_generation_page():
 
 
 # Display keywords and provide both buttons for rerun and generating an analysis article
-def display_analysis_keywords(keywords, selected_language, selected_text_model, fixed_prompt_append, round_idx):
+# Display keywords and provide both buttons for rerun and generating an analysis article
+def display_analysis_keywords(keywords, selected_language, selected_text_model, fixed_prompt_append, round_idx, generate_links):
     # Debug output to check parameter values
     st.write(f"Keywords: {keywords}")
     st.write(f"Selected language: {selected_language}")
@@ -369,6 +379,7 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                         'type': 'article',
                         'content': analysis_article
                     })
+
 
 # Debugging the rerun_with_keyword function
 def rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append):
