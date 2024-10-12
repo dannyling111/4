@@ -175,7 +175,7 @@ def display_keywords_and_links(keywords, input_text, selected_language, selected
         col1, col2, col3 = st.columns([3, 1, 1])  # Layout with 3 columns
 
         with col1:
-            st.markdown(f"**{keyword}**")
+            st.markdown(f"{keyword}")
         
         with col2:
             google_search = f"https://www.google.com/search?q={keyword}"
@@ -235,7 +235,7 @@ def text_generation_page():
         message_content += f"\nAdditional: {', '.join(selected_a3_items)}"
 
     st.subheader("AI 生成的最终提示词：")
-    st.write(f"**Prompt Input:**\n{message_content}")
+    st.write(f"Prompt Input:\n{message_content}")
 
     if st.button("生成文本"):
         with st.spinner("正在生成文本..."):
@@ -260,7 +260,7 @@ def wordcloud_generation_page():
                 google_search_link = f"https://www.google.com/search?q={keyword}"
                 google_news_link = f"https://news.google.com/search?q={keyword}"
                 youtube_link = f"https://www.youtube.com/results?search_query={keyword}"
-                st.markdown(f"- **{keyword}**: [Google Search]({google_search_link}) | [Google News]({google_news_link}) | [YouTube]({youtube_link})")
+                st.markdown(f"- {keyword}: [Google Search]({google_search_link}) | [Google News]({google_news_link}) | [YouTube]({youtube_link})")
 def analysis_generation_page():
     st.header("主题分析生成")
 
@@ -342,7 +342,7 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
         col1, col2 = st.columns([3, 2])
 
         with col1:
-            st.markdown(f"**{keyword}**")
+            st.markdown(f"{keyword}")
             if generate_links:
                 google_search = f"https://www.google.com/search?q={keyword}"
                 youtube_search = f"https://www.youtube.com/results?search_query={keyword}"
