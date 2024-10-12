@@ -20,6 +20,8 @@ import random
 from io import BytesIO
 import matplotlib.pyplot as plt
 import openpyxl
+import urllib.parse
+
 # Configure Matplotlib to use 'Agg' backend for Streamlit compatibility
 plt.switch_backend('Agg')
 
@@ -342,11 +344,12 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
         col1, col2 = st.columns([3, 2])
 
         with col1:
-            st.markdown(f"{keyword}")
+            st.markdown(f"**{keyword}**")
             if generate_links:
-                google_search = f"https://www.google.com/search?q={keyword}"
-                youtube_search = f"https://www.youtube.com/results?search_query={keyword}"
-                bilibili_search = f"https://search.bilibili.com/all?keyword={keyword}"
+                encoded_keyword = urllib.parse.quote(keyword)
+                google_search = f"https://www.google.com/search?q={encoded_keyword}"
+                youtube_search = f"https://www.youtube.com/results?search_query={encoded_keyword}"
+                bilibili_search = f"https://search.bilibili.com/all?keyword={encoded_keyword}"
                 st.markdown(f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})")
 
         with col2:
