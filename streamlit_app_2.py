@@ -279,6 +279,9 @@ def analysis_generation_page():
     fixed_prompt_options_a6 = aisettings_df['a6'].dropna().tolist()
     selected_fixed_prompt_a6 = st.selectbox("选择关键词生成模板", fixed_prompt_options_a6)
 
+    # 打勾选择是否生成搜索链接，默认勾选
+    generate_links = st.checkbox("是否生成关键词相关的搜索链接", value=True)
+
     # Initialize session state to hold multiple rounds of generation
     if 'analysis_rounds' not in st.session_state:
         st.session_state.analysis_rounds = []  # Empty list to hold each round of output
@@ -294,7 +297,8 @@ def analysis_generation_page():
             # Append the new keywords to session state (multiple rounds of keywords)
             st.session_state.analysis_rounds.append({
                 'type': 'keywords',
-                'content': new_analysis_keywords
+                'content': new_analysis_keywords,
+                'generate_links': generate_links  # 保存打勾状态
             })
 
     # Button to clear results
@@ -308,29 +312,30 @@ def analysis_generation_page():
         for round_idx, round_data in enumerate(st.session_state.analysis_rounds, 1):
             if round_data['type'] == 'keywords':
                 st.subheader(f"第 {round_idx} 轮生成的主题关键词")
+                # 传递是否生成链接的选项
                 display_analysis_keywords(
-                    round_data['content'], selected_language, selected_text_model, selected_fixed_prompt_a6, round_idx
+                    round_data['content'], selected_language, selected_text_model, selected_fixed_prompt_a6, round_idx, round_data['generate_links']
                 )
             elif round_data['type'] == 'article':
                 st.subheader(f"分析文章：第 {round_idx} 轮")
                 st.write(round_data['content'])
 
 
+
 # Display keywords and provide both buttons for rerun and generating an analysis article
-def display_analysis_keywords(keywords, selected_language, selected_text_model, fixed_prompt_append, round_idx):
+def display_analysis_keywords(keywords, selected_language, selected_text_model, fixed_prompt_append, round_idx, generate_links):
     for idx, keyword in enumerate(keywords):
         col1, col2, col3 = st.columns([3, 2, 1])  # Layout with 3 columns: keyword, rerun button, and analysis button
 
         with col1:
             st.markdown(f"**{keyword}**")
 
-        with col2:
-            # Ensure unique key by combining round index, loop index, and the keyword for rerun button
-            rerun_key = f"rerun_keyword_{round_idx}_{idx}_{keyword}"
-            if st.button(f"🔄 使用关键词重运行", key=rerun_key):
-                # Rerun the code with this keyword, appending results to previous outputs
-                st.session_state.input_text_prompt_analysis = keyword
-                rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append)
+        if generate_links:
+            with col2:
+                google_search = f"https://www.google.com/search?q={keyword}"
+                youtube_search = f"https://www.youtube.com/results?search_query={keyword}"
+                bilibili_search = f"https://search.bilibili.com/all?keyword={keyword}"
+                st.markdown(f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})")
 
         with col3:
             # Ensure unique key for the analysis article button
