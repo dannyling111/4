@@ -1,4 +1,4 @@
-Import necessary modules and libraries
+import necessary modules and libraries
 import time
 import pandas as pd
 from fastapi_poe.types import ProtocolMessage
