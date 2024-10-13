@@ -521,8 +521,11 @@ def excel_page():
             with pd.ExcelWriter(output, engine='openpyxl') as writer:
                 for sheet_name, sheet_data in df.items():
                     sheet_data.to_excel(writer, index=False, sheet_name=sheet_name)
-                writer.save()
-                processed_data = output.getvalue()
+            # 退出 with 块后，数据已经写入 output
+
+            # 将指针移到开始位置
+            output.seek(0)
+            processed_data = output.getvalue()
 
             # 提供下载
             st.download_button(
@@ -534,7 +537,6 @@ def excel_page():
 
     except Exception as e:
         st.error(f"读取或保存 Excel 文件时出错: {e}")
-
 
 
 
