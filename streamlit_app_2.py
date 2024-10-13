@@ -288,7 +288,7 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
         with col2:
             select_a7_key = f"a7_template_select_{round_idx}_{idx}"
             selected_a7_option = st.selectbox(
-                f"选择命令 (关键词: {keyword})",
+                "选择命令",
                 a7_options,
                 key=select_a7_key
             )
@@ -308,7 +308,7 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
         with col3:
             select_fixed_prompt_key = f"fixed_prompt_select_{round_idx}_{idx}"
             selected_fixed_prompt = st.selectbox(
-                f"选择模板 (关键词: {keyword})",
+                "选择模板",
                 fixed_prompt_options_a6,
                 key=select_fixed_prompt_key
             )
@@ -323,7 +323,6 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                 st.session_state[prev_select_fixed_prompt_key] = selected_fixed_prompt  # 更新 previous selection
                 if selected_fixed_prompt != '请选择模板':
                     handle_selection(keyword, '请选择命令', selected_fixed_prompt, selected_language, selected_text_model)
-
 
 
 def handle_selection(keyword, a7_option, fixed_prompt, language, model):
@@ -354,6 +353,7 @@ def generate_article(keyword, command, language, model):
     prompt = f"关键词: {keyword}\n命令: {command}\n语言: {language}"
     return fetch_text_response(prompt, model)
 
+# fetch_text_response 函数（用于获取文本生成的响应）
 def fetch_text_response(prompt, model):
     async def fetch():
         message = ProtocolMessage(role="user", content=prompt)
@@ -413,7 +413,6 @@ def analysis_generation_page():
         elif round_data['type'] == 'article':
             st.subheader(f"分析文章：第 {round_idx + 1} 轮")
             st.write(round_data['content'])
-
 
 
 
