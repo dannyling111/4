@@ -308,6 +308,7 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                     handle_selection(keyword, None, selected_fixed_prompt, selected_language, selected_text_model)
 
 
+
 def handle_selection(keyword, a7_option, fixed_prompt, language, model):
     if a7_option:
         with st.spinner(f"生成关于 {keyword} 的文章..."):
@@ -324,13 +325,9 @@ def handle_selection(keyword, a7_option, fixed_prompt, language, model):
         with st.spinner(f"根据模板 {fixed_prompt} 生成更多关键词..."):
             new_keywords = generate_keywords_and_links(keyword, language, model, fixed_prompt)
             if new_keywords:
-                st.session_state.analysis_rounds.append({
-                    'type': 'keywords',
-                    'content': new_keywords,
-                    'generate_links': False,
-                    'keyword': keyword
-                })
+                # 不再将新关键词添加到 analysis_rounds，而是直接显示
                 st.success(f"已生成基于 '{keyword}' 的新关键词")
+                st.write(", ".join(new_keywords))
 
 def display_analysis_results():
     for round_data in st.session_state.analysis_rounds:
@@ -338,10 +335,6 @@ def display_analysis_results():
             keyword = round_data.get('keyword', '未指定')
             st.subheader(f"基于关键词 '{keyword}' 生成的文章")
             st.write(round_data['content'])
-        elif round_data['type'] == 'keywords':
-            keyword = round_data.get('keyword', '未指定')
-            st.subheader(f"基于关键词 '{keyword}' 生成的新关键词")
-            st.write(", ".join(round_data['content']))
 
 def generate_article(keyword, command, language, model):
     prompt = f"关键词: {keyword}\n命令: {command}\n语言: {language}"
@@ -405,7 +398,7 @@ def analysis_generation_page():
                 round_data['content'], selected_language, selected_text_model, round_idx, round_data['generate_links']
             )
 
-    # 在页面底部显示所有生成的结果
+    # 在页面底部显示所有生成的文章结果
     display_analysis_results()
 
 
