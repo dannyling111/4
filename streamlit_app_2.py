@@ -267,7 +267,6 @@ def wordcloud_generation_page():
 
 
 
-# 在 display_analysis_keywords 函数中添加模板选择下拉框
 def analysis_generation_page():
     st.header("主题分析生成")
 
@@ -283,11 +282,11 @@ def analysis_generation_page():
     input_text_prompt_analysis = st.text_input(
         "请输入文本生成提示词", value=st.session_state.input_text_prompt_analysis)
 
-    # 主页面上的第一个原始下拉框（来自 a6 列）
+    # 主页面上的第一个下拉框（来自 a6 列）
     fixed_prompt_options_a6 = aisettings_df['a6'].dropna().tolist()
     selected_fixed_prompt_a6 = st.selectbox("选择关键词生成模板", fixed_prompt_options_a6)
 
-    # 保持原始的选择语言和模型
+    # 选择语言和模型
     selected_language = st.selectbox("选择语言", language_options)
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
 
@@ -297,16 +296,14 @@ def analysis_generation_page():
     if st.button("生成关键词"):
         if input_text_prompt_analysis.strip():
             with st.spinner("正在生成关键词..."):
-                new_analysis_keywords = generate_keywords_and_links(
+                new_keywords = generate_keywords_and_links(
                     input_text_prompt_analysis, selected_language, selected_text_model, selected_fixed_prompt_a6
                 )
-
-                if new_analysis_keywords:
+                if new_keywords:
                     st.session_state.analysis_rounds.append({
                         'type': 'keywords',
-                        'content': new_analysis_keywords,
-                        'generate_links': generate_links,
-                        'fixed_prompt': selected_fixed_prompt_a6
+                        'content': new_keywords,
+                        'generate_links': generate_links
                     })
                     st.session_state.trigger_rerun = True
         else:
@@ -318,13 +315,16 @@ def analysis_generation_page():
         st.session_state.trigger_rerun = True
         st.success("所有结果已清除！")
 
-    # 显示生成的关键词及其操作选项
+    # 显示每一轮的结果
     for round_idx, round_data in enumerate(st.session_state.analysis_rounds):
         if round_data['type'] == 'keywords':
             st.subheader(f"第 {round_idx + 1} 轮生成的主题关键词")
-            display_analysis_keywords(
+            display_keywords_and_actions(
                 round_data['content'], selected_language, selected_text_model, round_idx, round_data['generate_links']
             )
+        elif round_data['type'] == 'article':
+            st.subheader(f"分析文章：第 {round_idx + 1} 轮")
+            st.write(round_data['content'])
 
     # 检查是否需要重新运行
     if st.session_state.trigger_rerun:
@@ -332,7 +332,7 @@ def analysis_generation_page():
         st.experimental_set_query_params(**st.session_state)
 
 
-def display_analysis_keywords(keywords, selected_language, selected_text_model, round_idx, generate_links):
+def display_keywords_and_actions(keywords, selected_language, selected_text_model, round_idx, generate_links):
     # 从 a7 列获取第一个下拉框的选项
     a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
 
@@ -367,30 +367,23 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                 key=f"fixed_prompt_select_{round_idx}_{idx}"
             )
 
-        # 检查是否选择了有效的 a7 选项，并立即生成文章
+        # 如果选择了有效的 a7 选项，则生成分析文章并添加到 session_state
         if selected_a7_option != '请选择命令':
             with st.spinner(f"正在生成 {selected_a7_option} 的内容..."):
-                # 构建生成文章的提示词
                 analysis_prompt = (
                     f"关键词: {keyword}\n"
                     f"命令: {selected_a7_option}\n"
                     f"模板: {selected_fixed_prompt}\n"
                     f"语言: {selected_language}"
                 )
-
-                # 使用选中的模型生成分析文章
                 analysis_article = fetch_text_response(analysis_prompt, selected_text_model)
 
                 if analysis_article:
-                    # 将生成的文章保存到 session_state 中
                     st.session_state.analysis_rounds.append({
                         'type': 'article',
                         'content': analysis_article
                     })
                     st.success(f"成功生成关于 {keyword} 的分析文章！")
-                    # 显示生成的文章内容
-                    st.write(analysis_article)
-
 
 def fetch_text_response(prompt, model):
     async def fetch():
@@ -402,6 +395,7 @@ def fetch_text_response(prompt, model):
         return reply
 
     return asyncio.run(fetch())
+
 
 
 
