@@ -283,11 +283,11 @@ def analysis_generation_page():
     input_text_prompt_analysis = st.text_input(
         "请输入文本生成提示词", value=st.session_state.input_text_prompt_analysis)
 
-    # 保持主页面的原始下拉框（如 a6 列）
+    # 主页面上的第一个原始下拉框（来自 a6 列）
     fixed_prompt_options_a6 = aisettings_df['a6'].dropna().tolist()
     selected_fixed_prompt_a6 = st.selectbox("选择关键词生成模板", fixed_prompt_options_a6)
 
-    # 保持原始的选择语言和模型
+    # 主页面上的第二个原始下拉框：选择语言和模型
     selected_language = st.selectbox("选择语言", language_options)
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
 
@@ -306,7 +306,7 @@ def analysis_generation_page():
                         'type': 'keywords',
                         'content': new_analysis_keywords,
                         'generate_links': generate_links,
-                        'fixed_prompt': selected_fixed_prompt_a6
+                        'fixed_prompt': selected_fixed_prompt_a6  # 存储使用的模板
                     })
                     st.session_state.trigger_rerun = True
         else:
@@ -336,6 +336,9 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
     # 从 a7 列获取第一个下拉框的选项
     a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
 
+    # 第二个下拉框：来自 a6 列的选项（复用主页面逻辑）
+    fixed_prompt_options_a6 = aisettings_df['a6'].dropna().tolist()
+
     for idx, keyword in enumerate(keywords):
         col1, col2, col3 = st.columns([3, 2, 2])
 
@@ -357,21 +360,26 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
             )
 
         with col3:
-            # 第二个下拉框：保持与主页面相同的模型选择逻辑
-            selected_keyword_model = st.selectbox(
-                f"选择模型 (关键词: {keyword})",
-                text_bots,
-                key=f"keyword_model_select_{round_idx}_{idx}"
+            # 第二个下拉框：来自 a6 列的选项
+            selected_fixed_prompt = st.selectbox(
+                f"选择模板 (关键词: {keyword})",
+                fixed_prompt_options_a6,
+                key=f"fixed_prompt_select_{round_idx}_{idx}"
             )
 
         # 检查是否选择了有效的 a7 选项，并立即生成文章
         if selected_a7_option != '请选择命令':
             with st.spinner(f"正在生成 {selected_a7_option} 的内容..."):
                 # 构建生成文章的提示词
-                analysis_prompt = f"关键词: {keyword}\n模板: {selected_a7_option}\n语言: {selected_language}"
+                analysis_prompt = (
+                    f"关键词: {keyword}\n"
+                    f"命令: {selected_a7_option}\n"
+                    f"模板: {selected_fixed_prompt}\n"
+                    f"语言: {selected_language}"
+                )
 
                 # 使用选中的模型生成分析文章
-                analysis_article = fetch_text_response(analysis_prompt, selected_keyword_model)
+                analysis_article = fetch_text_response(analysis_prompt, selected_text_model)
 
                 if analysis_article:
                     # 将生成的文章保存到 session_state 中
@@ -380,6 +388,19 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                         'content': analysis_article
                     })
                     st.success(f"成功生成关于 {keyword} 的分析文章！")
+
+
+def fetch_text_response(prompt, model):
+    async def fetch():
+        message = ProtocolMessage(role="user", content=prompt)
+        reply = ""
+        async for partial in get_bot_response(messages=[message], bot_name=model, api_key=api_key):
+            response = json.loads(partial.raw_response["text"])
+            reply += response["text"]
+        return reply
+
+    return asyncio.run(fetch())
+
 
 
 
@@ -393,17 +414,7 @@ def rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_pr
                 'generate_links': True  # Assuming we want links for rerun keywords
             })
           
-# Fetch the analysis article using the API call
-def fetch_text_response(prompt, model):
-    async def fetch():
-        message = ProtocolMessage(role="user", content=prompt)
-        reply = ""
-        async for partial in get_bot_response(messages=[message], bot_name=model, api_key=api_key):
-            response = json.loads(partial.raw_response["text"])
-            reply += response["text"]
-        return reply
 
-    return asyncio.run(fetch())
 
 
 def japanese_learning_page():
