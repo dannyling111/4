@@ -400,7 +400,8 @@ def analysis_generation_page():
             st.subheader(f"分析文章：第 {round_idx + 1} 轮")
             st.write(round_data['content'])
 
-
+    # Add this line at the end of the function
+    display_analysis_results()
 
 
 
