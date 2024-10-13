@@ -330,10 +330,12 @@ def handle_selection(keyword, a7_option, fixed_prompt, language, model):
 def display_analysis_results():
     for round_data in st.session_state.analysis_rounds:
         if round_data['type'] == 'article':
-            st.subheader(f"基于关键词 '{round_data['keyword']}' 生成的文章")
+            keyword = round_data.get('keyword', '未指定')
+            st.subheader(f"基于关键词 '{keyword}' 生成的文章")
             st.write(round_data['content'])
         elif round_data['type'] == 'keywords':
-            st.subheader(f"基于关键词 '{round_data['keyword']}' 生成的新关键词")
+            keyword = round_data.get('keyword', '未指定')
+            st.subheader(f"基于关键词 '{keyword}' 生成的新关键词")
             st.write(", ".join(round_data['content']))
 
 def generate_article(keyword, command, language, model):
