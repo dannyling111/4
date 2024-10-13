@@ -366,10 +366,13 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
 def analysis_generation_page():
     st.header("主题分析生成")
 
+    # 初始化 session state 中的变量
     if 'input_text_prompt_analysis' not in st.session_state:
         st.session_state.input_text_prompt_analysis = ''
     if 'analysis_rounds' not in st.session_state:
         st.session_state.analysis_rounds = []
+    if 'selected_a7_option' not in st.session_state:
+        st.session_state.selected_a7_option = None  # 初始化为空值
     if 'trigger_rerun' not in st.session_state:
         st.session_state.trigger_rerun = False
 
@@ -381,14 +384,19 @@ def analysis_generation_page():
     selected_language = st.selectbox("选择语言", language_options)
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
 
-    # 从 a7 列中获取下拉框选项
-    a7_options = aisettings_df['a7'].dropna().tolist()
-    selected_a7_option = st.selectbox("选择分析生成模板 (a7 列)", a7_options)
+    # 从 a7 列中获取选项，并添加默认提示项
+    a7_options = ['请选择模板'] + aisettings_df['a7'].dropna().tolist()
+    selected_a7_option = st.selectbox(
+        "选择分析生成模板 (a7 列)", a7_options, key='a7_template_select'
+    )
 
     generate_links = st.checkbox("是否生成关键词相关的搜索链接", value=True)
 
-    # 如果用户选择了 a7 选项，立即执行相应任务
-    if selected_a7_option:
+    # 检查是否选择了有效的 a7 选项，并且与之前选择的不同
+    if selected_a7_option != '请选择模板' and selected_a7_option != st.session_state.selected_a7_option:
+        # 更新 session state 以避免重复触发
+        st.session_state.selected_a7_option = selected_a7_option
+
         with st.spinner(f"正在生成 {selected_a7_option} 的内容..."):
             # 构建最终的提示词
             analysis_prompt = f"{input_text_prompt_analysis}\n模板: {selected_a7_option}\n语言: {selected_language}"
@@ -406,10 +414,11 @@ def analysis_generation_page():
     if st.button("清除结果"):
         st.session_state.analysis_rounds = []
         st.session_state.input_text_prompt_analysis = ''
+        st.session_state.selected_a7_option = None  # 重置为未选择状态
         st.session_state.trigger_rerun = True
         st.success("所有结果已清除！")
 
-    # 显示生成的文章或关键词
+    # 显示生成的文章
     for round_idx, round_data in enumerate(st.session_state.analysis_rounds):
         if round_data['type'] == 'article':
             st.subheader(f"分析文章：第 {round_idx + 1} 轮")
@@ -421,29 +430,6 @@ def analysis_generation_page():
         # 添加一个空元素，触发 Streamlit 重新运行
         st.experimental_set_query_params(**st.session_state)
 
-
-
-    for round_idx, round_data in enumerate(st.session_state.analysis_rounds):
-        if round_data['type'] == 'keywords':
-            st.subheader(f"第 {round_idx + 1} 轮生成的主题关键词")
-            display_analysis_keywords(
-                round_data['content'],
-                selected_language,
-                selected_text_model,
-                fixed_prompt_options_a6,  # 传递模板选项列表
-                round_idx,
-                round_data['generate_links'],
-                round_data['fixed_prompt']  # 传递当前轮次使用的模板
-            )
-        elif round_data['type'] == 'article':
-            st.subheader(f"分析文章：第 {round_idx + 1} 轮")
-            st.write(round_data['content'])
-
-    # 检查是否需要重新运行
-    if st.session_state.trigger_rerun:
-        st.session_state.trigger_rerun = False
-        # 添加一个空的元素，触发 Streamlit 重新运行
-        st.experimental_set_query_params(**st.session_state)
 
 
 
