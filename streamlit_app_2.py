@@ -302,7 +302,7 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
             if selected_a7_option != st.session_state[prev_select_a7_key]:
                 st.session_state[prev_select_a7_key] = selected_a7_option  # 更新 previous selection
                 if selected_a7_option != '请选择命令':
-                    handle_selection(keyword, selected_a7_option, '请选择模板', selected_language, selected_text_model)
+                    handle_selection(keyword, selected_a7_option, '请选择模板', selected_language, selected_text_model, generate_links)
 
         # 第二个下拉框，用于生成更多关键词
         with col3:
@@ -322,10 +322,11 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
             if selected_fixed_prompt != st.session_state[prev_select_fixed_prompt_key]:
                 st.session_state[prev_select_fixed_prompt_key] = selected_fixed_prompt  # 更新 previous selection
                 if selected_fixed_prompt != '请选择模板':
-                    handle_selection(keyword, '请选择命令', selected_fixed_prompt, selected_language, selected_text_model)
+                    handle_selection(keyword, '请选择命令', selected_fixed_prompt, selected_language, selected_text_model, generate_links)
 
 
-def handle_selection(keyword, a7_option, fixed_prompt, language, model):
+
+def handle_selection(keyword, a7_option, fixed_prompt, language, model, generate_links):
     # 如果选择了 a7 下拉框命令，生成文章
     if a7_option != '请选择命令':
         with st.spinner(f"生成关于 {keyword} 的文章..."):
@@ -345,7 +346,7 @@ def handle_selection(keyword, a7_option, fixed_prompt, language, model):
                 st.session_state.analysis_rounds.append({
                     'type': 'keywords',
                     'content': new_keywords,
-                    'generate_links': False
+                    'generate_links': generate_links  # 使用当前的 generate_links 设置
                 })
                 st.success("成功生成更多关键词！")
 
@@ -394,7 +395,7 @@ def analysis_generation_page():
                     st.session_state.analysis_rounds.append({
                         'type': 'keywords',
                         'content': new_keywords,
-                        'generate_links': generate_links
+                        'generate_links': generate_links  # 确保正确设置 generate_links
                     })
         else:
             st.warning("请输入文本生成提示词！")
@@ -413,6 +414,7 @@ def analysis_generation_page():
         elif round_data['type'] == 'article':
             st.subheader(f"分析文章：第 {round_idx + 1} 轮")
             st.write(round_data['content'])
+
 
 
 
