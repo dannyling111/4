@@ -320,26 +320,15 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
 def analysis_generation_page():
     st.header("主题分析生成")
 
-    # 初始化 session_state 中的变量
     if 'input_text_prompt_analysis' not in st.session_state:
         st.session_state.input_text_prompt_analysis = ''
     if 'analysis_rounds' not in st.session_state:
         st.session_state.analysis_rounds = []
     if 'trigger_rerun' not in st.session_state:
         st.session_state.trigger_rerun = False
-    if 'max_rounds' not in st.session_state:
-        st.session_state.max_rounds = 5  # 默认最大轮数
 
-    # 设置最大显示轮数
-    max_rounds = st.number_input(
-        "设置最大显示轮数", min_value=1, max_value=20, value=st.session_state.max_rounds, step=1
-    )
-    st.session_state.max_rounds = max_rounds  # 更新 session_state 中的最大轮数
-
-    # 输入提示词
     input_text_prompt_analysis = st.text_input(
-        "请输入文本生成提示词", value=st.session_state.input_text_prompt_analysis
-    )
+        "请输入文本生成提示词", value=st.session_state.input_text_prompt_analysis)
 
     selected_language = st.selectbox("选择语言", language_options)
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
@@ -353,8 +342,7 @@ def analysis_generation_page():
         if input_text_prompt_analysis.strip():
             with st.spinner("正在生成关键词..."):
                 new_analysis_keywords = generate_keywords_and_links(
-                    input_text_prompt_analysis, selected_language, selected_text_model, selected_fixed_prompt_a6
-                )
+                    input_text_prompt_analysis, selected_language, selected_text_model, selected_fixed_prompt_a6)
 
                 if new_analysis_keywords:
                     st.session_state.analysis_rounds.append({
@@ -362,11 +350,6 @@ def analysis_generation_page():
                         'content': new_analysis_keywords,
                         'generate_links': generate_links
                     })
-
-                    # 如果轮数超过最大轮数，则删除最早的一轮
-                    if len(st.session_state.analysis_rounds) > st.session_state.max_rounds:
-                        st.session_state.analysis_rounds.pop(0)
-
                     st.session_state.trigger_rerun = True
         else:
             st.warning("请输入文本生成提示词！")
@@ -377,26 +360,25 @@ def analysis_generation_page():
         st.session_state.trigger_rerun = True
         st.success("所有结果已清除！")
 
-    # 显示生成的所有轮次内容
     for round_idx, round_data in enumerate(st.session_state.analysis_rounds):
         if round_data['type'] == 'keywords':
             st.subheader(f"第 {round_idx + 1} 轮生成的主题关键词")
             display_analysis_keywords(
-                round_data['content'],
-                selected_language,
-                selected_text_model,
-                selected_fixed_prompt_a6,
-                round_idx,
+                round_data['content'], 
+                selected_language, 
+                selected_text_model, 
+                selected_fixed_prompt_a6, 
+                round_idx, 
                 round_data['generate_links']
             )
         elif round_data['type'] == 'article':
             st.subheader(f"分析文章：第 {round_idx + 1} 轮")
             st.write(round_data['content'])
 
-    # 如果触发了重启，则重新加载页面
+    # Check if a rerun is needed and reset the trigger
     if st.session_state.trigger_rerun:
         st.session_state.trigger_rerun = False
-        st.experimental_rerun()
+        st.rerun()
 
 
 def rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append):
