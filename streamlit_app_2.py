@@ -432,10 +432,46 @@ def japanese_learning_page():
             if text_response:
                 st.success("生成的文本：")
                 st.write(text_response)
-# Sidebar for navigation and main app structure
+
+def excel_page():
+    st.header("Excel 文件读取与编辑")
+    
+    # 上传Excel文件
+    uploaded_file = st.file_uploader("上传一个Excel文件", type=["xlsx"])
+    
+    if uploaded_file:
+        # 读取上传的Excel文件并显示内容
+        try:
+            df = pd.read_excel(uploaded_file, sheet_name=None)  # 支持多Sheet
+            sheet_names = list(df.keys())
+            selected_sheet = st.selectbox("选择工作表", sheet_names)  # 选择Sheet
+            st.write(f"**正在查看表：{selected_sheet}**")
+
+            # 显示数据表
+            data = df[selected_sheet]
+            edited_data = st.experimental_data_editor(data, use_container_width=True)  # 编辑器
+
+            # 保存编辑后的数据
+            if st.button("保存编辑后的文件"):
+                save_path = "edited_excel.xlsx"
+                with pd.ExcelWriter(save_path, engine='openpyxl') as writer:
+                    edited_data.to_excel(writer, index=False, sheet_name=selected_sheet)
+                st.success(f"文件已保存为 {save_path}")
+
+                with open(save_path, "rb") as f:
+                    st.download_button(
+                        label="下载编辑后的Excel文件",
+                        data=f,
+                        file_name="edited_excel.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    )
+        except Exception as e:
+            st.error(f"无法读取文件: {e}")
+
+
 def main():
     st.sidebar.title("导航")
-    page = st.sidebar.selectbox("选择页面", ["关键词提取", "词云生成", "图像生成", "文本生成", "学习日语", "主题分析生成"])
+    page = st.sidebar.selectbox("选择页面", ["关键词提取", "词云生成", "图像生成", "文本生成", "学习日语", "主题分析生成", "Excel"])
 
     if page == "关键词提取":
         keyword_extraction_page()
@@ -447,8 +483,10 @@ def main():
         text_generation_page()
     elif page == "学习日语":
         japanese_learning_page()
-    elif page == "主题分析生成":  # Newly added page route
+    elif page == "主题分析生成":
         analysis_generation_page()
+    elif page == "Excel":
+        excel_page()  # 调用新的Excel页面函数
 
 # Run the app
 if __name__ == "__main__":
