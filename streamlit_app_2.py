@@ -267,101 +267,6 @@ def wordcloud_generation_page():
 
 
 # 在 display_analysis_keywords 函数中添加模板选择下拉框
-def display_analysis_keywords(keywords, selected_language, selected_text_model, fixed_prompt_options_a6, round_idx, generate_links, fixed_prompt_used):
-    if not keywords:
-        st.error("No keywords provided.")
-        return
-
-    for idx, keyword in enumerate(keywords):
-        col1, col2, col3 = st.columns([3, 2, 3])  # 调整列宽
-
-        with col1:
-            st.markdown(f"**{keyword}**")
-            if generate_links:
-                encoded_keyword = urllib.parse.quote(keyword)
-                google_search = f"https://www.google.com/search?q={encoded_keyword}"
-                youtube_search = f"https://www.youtube.com/results?search_query={encoded_keyword}"
-                bilibili_search = f"https://search.bilibili.com/all?keyword={encoded_keyword}"
-                st.markdown(f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})")
-
-        with col2:
-            action_key = f"action_select_{round_idx}_{idx}"
-            action_options = ["请选择操作", "🔄 重新生成关键词", "📝 生成分析文章"]
-            selected_action = st.selectbox(
-                "选择操作",
-                options=action_options,
-                key=action_key
-            )
-
-            # 定义一个唯一的键来存储先前的选择
-            prev_action_key = f"prev_action_{round_idx}_{idx}"
-            prev_selected_action = st.session_state.get(prev_action_key, "请选择操作")
-
-            if selected_action != "请选择操作" and selected_action != prev_selected_action:
-                if selected_action == "🔄 重新生成关键词":
-                    with st.spinner(f"正在使用关键词 {keyword} 重新生成..."):
-                        new_keywords = generate_keywords_and_links(
-                            input_text=keyword,
-                            language=selected_language,
-                            model=selected_text_model,
-                            fixed_prompt_append=fixed_prompt_used  # 使用当前轮次的模板
-                        )
-                        if new_keywords:
-                            st.session_state.analysis_rounds.append({
-                                'type': 'keywords',
-                                'content': new_keywords,
-                                'generate_links': generate_links,
-                                'fixed_prompt': fixed_prompt_used  # 继续传递使用的模板
-                            })
-                            # 更新状态以避免重复执行
-                            st.session_state[prev_action_key] = selected_action
-                            # 更新一个状态变量以触发重新运行
-                            st.session_state.trigger_rerun = True
-                elif selected_action == "📝 生成分析文章":
-                    with st.spinner(f"正在生成关于 {keyword} 的分析文章..."):
-                        analysis_prompt = f"写一篇关于{keyword}的分析文章。语言: {selected_language}"
-                        analysis_article = fetch_text_response(analysis_prompt, selected_text_model)
-                        if analysis_article:
-                            st.session_state.analysis_rounds.append({
-                                'type': 'article',
-                                'content': analysis_article
-                            })
-                            # 更新状态以避免重复执行
-                            st.session_state[prev_action_key] = selected_action
-                            st.session_state.trigger_rerun = True
-
-        with col3:
-            # 添加模板选择下拉框
-            template_key = f"template_select_{round_idx}_{idx}"
-            selected_template = st.selectbox(
-                "选择关键词生成模板",
-                options=['请选择模板'] + fixed_prompt_options_a6,
-                key=template_key
-            )
-
-            # 定义一个唯一的键来存储先前的模板选择
-            prev_template_key = f"prev_template_{round_idx}_{idx}"
-            prev_selected_template = st.session_state.get(prev_template_key, '请选择模板')
-
-            if selected_template != '请选择模板' and selected_template != prev_selected_template:
-                with st.spinner(f"正在使用关键词 {keyword} 和模板 {selected_template} 重新生成..."):
-                    new_keywords = generate_keywords_and_links(
-                        input_text=keyword,
-                        language=selected_language,
-                        model=selected_text_model,
-                        fixed_prompt_append=selected_template
-                    )
-                    if new_keywords:
-                        st.session_state.analysis_rounds.append({
-                            'type': 'keywords',
-                            'content': new_keywords,
-                            'generate_links': generate_links,
-                            'fixed_prompt': selected_template  # 存储新选择的模板
-                        })
-                        # 更新状态以避免重复执行
-                        st.session_state[prev_template_key] = selected_template
-                        st.session_state.trigger_rerun = True
-
 def analysis_generation_page():
     st.header("主题分析生成")
 
@@ -369,8 +274,6 @@ def analysis_generation_page():
         st.session_state.input_text_prompt_analysis = ''
     if 'analysis_rounds' not in st.session_state:
         st.session_state.analysis_rounds = []
-    if 'trigger_rerun' not in st.session_state:
-        st.session_state.trigger_rerun = False
 
     input_text_prompt_analysis = st.text_input(
         "请输入文本生成提示词", value=st.session_state.input_text_prompt_analysis)
@@ -394,16 +297,14 @@ def analysis_generation_page():
                         'type': 'keywords',
                         'content': new_analysis_keywords,
                         'generate_links': generate_links,
-                        'fixed_prompt': selected_fixed_prompt_a6  # 存储使用的模板
+                        'fixed_prompt': selected_fixed_prompt_a6
                     })
-                    st.session_state.trigger_rerun = True
         else:
             st.warning("请输入文本生成提示词！")
 
     if st.button("清除结果"):
         st.session_state.analysis_rounds = []
         st.session_state.input_text_prompt_analysis = ''
-        st.session_state.trigger_rerun = True
         st.success("所有结果已清除！")
 
     for round_idx, round_data in enumerate(st.session_state.analysis_rounds):
@@ -413,20 +314,66 @@ def analysis_generation_page():
                 round_data['content'],
                 selected_language,
                 selected_text_model,
-                fixed_prompt_options_a6,  # 传递模板选项列表
+                fixed_prompt_options_a6,
                 round_idx,
-                round_data['generate_links'],
-                round_data['fixed_prompt']  # 传递当前轮次使用的模板
+                round_data['generate_links']
             )
         elif round_data['type'] == 'article':
             st.subheader(f"分析文章：第 {round_idx + 1} 轮")
             st.write(round_data['content'])
 
-    # 检查是否需要重新运行
-    if st.session_state.trigger_rerun:
-        st.session_state.trigger_rerun = False
-        # 添加一个空的元素，触发 Streamlit 重新运行
-        st.experimental_set_query_params(**st.session_state)
+def display_analysis_keywords(keywords, selected_language, selected_text_model, fixed_prompt_options_a6, round_idx, generate_links):
+    a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
+
+    for idx, keyword in enumerate(keywords):
+        col1, col2, col3 = st.columns([3, 2, 2])
+
+        with col1:
+            st.markdown(f"**{keyword}**")
+            if generate_links:
+                encoded_keyword = urllib.parse.quote(keyword)
+                google_search = f"https://www.google.com/search?q={encoded_keyword}"
+                youtube_search = f"https://www.youtube.com/results?search_query={encoded_keyword}"
+                bilibili_search = f"https://search.bilibili.com/all?keyword={encoded_keyword}"
+                st.markdown(f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})")
+
+        with col2:
+            selected_a7_option = st.selectbox(
+                f"选择命令 (关键词: {keyword})",
+                a7_options,
+                key=f"a7_select_{round_idx}_{idx}"
+            )
+            if selected_a7_option != '请选择命令':
+                generate_article(keyword, selected_a7_option, selected_language, selected_text_model)
+
+        with col3:
+            selected_a6_option = st.selectbox(
+                f"选择模板 (关键词: {keyword})",
+                fixed_prompt_options_a6,
+                key=f"a6_select_{round_idx}_{idx}"
+            )
+            if selected_a6_option:
+                generate_more_keywords(keyword, selected_a6_option, selected_language, selected_text_model)
+
+def generate_article(keyword, command, language, model):
+    with st.spinner(f"正在生成关于 {keyword} 的文章..."):
+        prompt = f"关键词: {keyword}\n命令: {command}\n语言: {language}"
+        article = fetch_text_response(prompt, model)
+        if article:
+            st.session_state.analysis_rounds.append({
+                'type': 'article',
+                'content': article
+            })
+
+def generate_more_keywords(keyword, template, language, model):
+    with st.spinner(f"正在根据 {template} 生成更多关键词..."):
+        new_keywords = generate_keywords_and_links(keyword, language, model, template)
+        if new_keywords:
+            st.session_state.analysis_rounds.append({
+                'type': 'keywords',
+                'content': new_keywords,
+                'generate_links': False
+            })
 
 
 
