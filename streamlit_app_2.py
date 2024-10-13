@@ -268,18 +268,15 @@ def wordcloud_generation_page():
 
 # 在 display_analysis_keywords 函数中添加模板选择下拉框
 def display_analysis_keywords(keywords, selected_language, selected_text_model, round_idx, generate_links):
-    # 第一个下拉框：从 a7 列中获取选项
+    # 从 a7 列获取第一个下拉框的选项
     a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
+    # 第二个下拉框：来自 a6 列的选项
+    fixed_prompt_options_a6 = ['请选择模板'] + aisettings_df['a6'].dropna().tolist()
 
-    # 第二个下拉框：从 a6 列中获取选项
-    fixed_prompt_options_a6 = aisettings_df['a6'].dropna().tolist()
-
-    # 遍历每个关键词，添加下拉框和按钮
     for idx, keyword in enumerate(keywords):
         col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
 
         with col1:
-            # 显示关键词
             st.markdown(f"**{keyword}**")
             if generate_links:
                 encoded_keyword = urllib.parse.quote(keyword)
@@ -307,9 +304,11 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
         # 确认按钮触发生成操作
         with col4:
             if st.button(f"确认 (关键词: {keyword})", key=f"confirm_button_{round_idx}_{idx}"):
-                # 处理选择的下拉框命令和模板
-                handle_selection(keyword, selected_a7_option, selected_fixed_prompt, selected_language, selected_text_model)
-
+                # 只有在用户选择了有效的选项时，才执行生成逻辑
+                if selected_a7_option != '请选择命令' or selected_fixed_prompt != '请选择模板':
+                    handle_selection(keyword, selected_a7_option, selected_fixed_prompt, selected_language, selected_text_model)
+                else:
+                    st.warning("请选择有效的命令或模板！")
 
 def handle_selection(keyword, a7_option, fixed_prompt, language, model):
     # 如果选择了 a7 下拉框命令，生成文章
@@ -324,7 +323,7 @@ def handle_selection(keyword, a7_option, fixed_prompt, language, model):
                 st.success(f"成功生成关于 {keyword} 的文章！")
 
     # 如果选择了模板，生成更多关键词
-    if fixed_prompt:
+    if fixed_prompt != '请选择模板':
         with st.spinner(f"根据模板 {fixed_prompt} 生成更多关键词..."):
             new_keywords = generate_keywords_and_links(keyword, language, model, fixed_prompt)
             if new_keywords:
@@ -335,11 +334,9 @@ def handle_selection(keyword, a7_option, fixed_prompt, language, model):
                 })
                 st.success("成功生成更多关键词！")
 
-
 def generate_article(keyword, command, language, model):
     prompt = f"关键词: {keyword}\n命令: {command}\n语言: {language}"
     return fetch_text_response(prompt, model)
-
 
 def fetch_text_response(prompt, model):
     async def fetch():
@@ -351,7 +348,6 @@ def fetch_text_response(prompt, model):
         return reply
 
     return asyncio.run(fetch())
-
 
 def analysis_generation_page():
     st.header("主题分析生成")
@@ -405,6 +401,7 @@ def analysis_generation_page():
 
 
 
+
 def rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append):
     with st.spinner(f"正在使用关键词 {keyword} 重新生成..."):
         new_keywords = generate_keywords_and_links(keyword, selected_language, selected_text_model, fixed_prompt_append)
@@ -415,17 +412,7 @@ def rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_pr
                 'generate_links': True  # Assuming we want links for rerun keywords
             })
           
-# Fetch the analysis article using the API call
-def fetch_text_response(message_content, model):
-    async def fetch():
-        message = ProtocolMessage(role="user", content=message_content)
-        reply = ""
-        async for partial in get_bot_response(messages=[message], bot_name=model, api_key=api_key):
-            response = json.loads(partial.raw_response["text"])
-            reply += response["text"]
-        return reply
 
-    return asyncio.run(fetch())
 
 
 def japanese_learning_page():
