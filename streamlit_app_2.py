@@ -373,39 +373,55 @@ def analysis_generation_page():
     if 'trigger_rerun' not in st.session_state:
         st.session_state.trigger_rerun = False
 
+    # 输入提示词
     input_text_prompt_analysis = st.text_input(
         "请输入文本生成提示词", value=st.session_state.input_text_prompt_analysis)
 
+    # 选择语言和文本生成模型
     selected_language = st.selectbox("选择语言", language_options)
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
 
-    fixed_prompt_options_a6 = aisettings_df['a6'].dropna().tolist()
-    selected_fixed_prompt_a6 = st.selectbox("选择关键词生成模板", fixed_prompt_options_a6)
+    # 从 a7 列中获取下拉框选项
+    a7_options = aisettings_df['a7'].dropna().tolist()
+    selected_a7_option = st.selectbox("选择分析生成模板 (a7 列)", a7_options)
 
     generate_links = st.checkbox("是否生成关键词相关的搜索链接", value=True)
 
-    if st.button("生成关键词"):
-        if input_text_prompt_analysis.strip():
-            with st.spinner("正在生成关键词..."):
-                new_analysis_keywords = generate_keywords_and_links(
-                    input_text_prompt_analysis, selected_language, selected_text_model, selected_fixed_prompt_a6)
+    # 如果用户选择了 a7 选项，立即执行相应任务
+    if selected_a7_option:
+        with st.spinner(f"正在生成 {selected_a7_option} 的内容..."):
+            # 构建最终的提示词
+            analysis_prompt = f"{input_text_prompt_analysis}\n模板: {selected_a7_option}\n语言: {selected_language}"
 
-                if new_analysis_keywords:
-                    st.session_state.analysis_rounds.append({
-                        'type': 'keywords',
-                        'content': new_analysis_keywords,
-                        'generate_links': generate_links,
-                        'fixed_prompt': selected_fixed_prompt_a6  # 存储使用的模板
-                    })
-                    st.session_state.trigger_rerun = True
-        else:
-            st.warning("请输入文本生成提示词！")
+            # 使用选定的模型生成分析文章
+            analysis_article = fetch_text_response(analysis_prompt, selected_text_model)
+
+            if analysis_article:
+                st.session_state.analysis_rounds.append({
+                    'type': 'article',
+                    'content': analysis_article
+                })
+                st.success(f"成功生成关于 {selected_a7_option} 的分析文章！")
 
     if st.button("清除结果"):
         st.session_state.analysis_rounds = []
         st.session_state.input_text_prompt_analysis = ''
         st.session_state.trigger_rerun = True
         st.success("所有结果已清除！")
+
+    # 显示生成的文章或关键词
+    for round_idx, round_data in enumerate(st.session_state.analysis_rounds):
+        if round_data['type'] == 'article':
+            st.subheader(f"分析文章：第 {round_idx + 1} 轮")
+            st.write(round_data['content'])
+
+    # 检查是否需要重新运行
+    if st.session_state.trigger_rerun:
+        st.session_state.trigger_rerun = False
+        # 添加一个空元素，触发 Streamlit 重新运行
+        st.experimental_set_query_params(**st.session_state)
+
+
 
     for round_idx, round_data in enumerate(st.session_state.analysis_rounds):
         if round_data['type'] == 'keywords':
