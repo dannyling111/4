@@ -436,33 +436,37 @@ def japanese_learning_page():
 def excel_page():
     st.header("Excel 文件读取与编辑")
 
-    # 预设 Excel 文件路径（你已经在代码中定义）
+    # Excel 文件路径（固定路径）
     xlsx_path = "aisetting.xlsx"
 
     try:
-        # 读取 Excel 文件中的所有 Sheet
-        df = pd.read_excel(xlsx_path, sheet_name=None)  # 支持多个工作表
-        sheet_names = list(df.keys())
-        selected_sheet = st.selectbox("选择工作表", sheet_names)  # 选择 Sheet
+        # 读取 Excel 文件中的所有工作表
+        df = pd.read_excel(xlsx_path, sheet_name=None)  
+        sheet_names = list(df.keys())  # 获取所有工作表名称
+        selected_sheet = st.selectbox("选择工作表", sheet_names)  # 选择工作表
 
-        # 显示并编辑所选 Sheet 数据
-        st.write(f"**正在查看和编辑表：{selected_sheet}**")
+        # 获取当前工作表的数据
         data = df[selected_sheet]
-        edited_data = st.experimental_data_editor(data, use_container_width=True)
+        st.write(f"**当前显示的表：{selected_sheet}**")
 
-        # 保存编辑后的数据到原 Excel 文件
+        # 显示可编辑表格
+        edited_data = st.data_editor(data, use_container_width=True)  # 使用 `st.data_editor`
+
+        # 按钮保存编辑后的内容
         if st.button("保存编辑后的文件"):
             with pd.ExcelWriter(xlsx_path, engine='openpyxl') as writer:
-                # 遍历所有 Sheets，保持未编辑的内容，并保存编辑后的内容
+                # 遍历所有工作表，保存编辑后的内容
                 for sheet_name, sheet_data in df.items():
                     if sheet_name == selected_sheet:
-                        edited_data.to_excel(writer, index=False, sheet_name=sheet_name)
+                        edited_data.to_excel(writer, index=False, sheet_name=sheet_name)  # 保存编辑的数据
                     else:
-                        sheet_data.to_excel(writer, index=False, sheet_name=sheet_name)
-            st.success(f"编辑后的内容已成功保存到 {xlsx_path}")
+                        sheet_data.to_excel(writer, index=False, sheet_name=sheet_name)  # 保留未编辑的数据
+
+            st.success(f"已成功保存编辑后的内容到 {xlsx_path}")
 
     except Exception as e:
         st.error(f"读取或保存 Excel 文件时出错: {e}")
+
 
 
 
