@@ -21,6 +21,7 @@ from io import BytesIO
 import matplotlib.pyplot as plt
 import openpyxl
 import urllib.parse
+import io
 
 # Configure Matplotlib to use 'Agg' backend for Streamlit compatibility
 plt.switch_backend('Agg')
@@ -510,20 +511,26 @@ def excel_page():
         edited_data = st.data_editor(st.session_state[edited_data_key], use_container_width=True)
         st.session_state[edited_data_key] = edited_data
 
-        # 按钮保存编辑后的内容
-        if st.button("保存编辑后的文件"):
+        # 按钮下载编辑后的文件
+        if st.button("下载编辑后的文件"):
             # 更新 df 中对应的工作表数据
             df[selected_sheet] = st.session_state[edited_data_key]
 
-            # 保存所有工作表到 Excel 文件
-            with pd.ExcelWriter(xlsx_path, engine='openpyxl') as writer:
+            # 将所有工作表的数据保存到 BytesIO 对象
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
                 for sheet_name, sheet_data in df.items():
                     sheet_data.to_excel(writer, index=False, sheet_name=sheet_name)
+                writer.save()
+                processed_data = output.getvalue()
 
-            st.success(f"已成功保存编辑后的内容到 {xlsx_path}")
-
-            # 清除 session_state 中的已编辑数据，以便下一次重新加载
-            del st.session_state[edited_data_key]
+            # 提供下载
+            st.download_button(
+                label="点击下载编辑后的 Excel 文件",
+                data=processed_data,
+                file_name="aisetting_edited.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
 
     except Exception as e:
         st.error(f"读取或保存 Excel 文件时出错: {e}")
