@@ -267,7 +267,7 @@ def wordcloud_generation_page():
 
 
 # 在 display_analysis_keywords 函数中添加模板选择下拉框
-def display_analysis_keywords(keywords, selected_language, selected_text_model, fixed_prompt_options_a6, round_idx, generate_links):
+def display_analysis_keywords(keywords, selected_language, selected_text_model, fixed_prompt_options_a6, round_idx, generate_links, fixed_prompt_used):
     if not keywords:
         st.error("No keywords provided.")
         return
@@ -301,13 +301,14 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                             input_text=keyword,
                             language=selected_language,
                             model=selected_text_model,
-                            fixed_prompt_append=st.session_state.get(f"fixed_prompt_{round_idx}", "")
+                            fixed_prompt_append=fixed_prompt_used  # 使用当前轮次的模板
                         )
                         if new_keywords:
                             st.session_state.analysis_rounds.append({
                                 'type': 'keywords',
                                 'content': new_keywords,
-                                'generate_links': generate_links
+                                'generate_links': generate_links,
+                                'fixed_prompt': fixed_prompt_used  # 继续传递使用的模板
                             })
                             st.session_state[action_processed_key] = True
                             st.experimental_rerun()
@@ -348,12 +349,12 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                         st.session_state.analysis_rounds.append({
                             'type': 'keywords',
                             'content': new_keywords,
-                            'generate_links': generate_links
+                            'generate_links': generate_links,
+                            'fixed_prompt': selected_template  # 存储新选择的模板
                         })
                         st.session_state[previous_template_key] = selected_template
                         st.experimental_rerun()
 
-# 修改 analysis_generation_page 函数，传递 fixed_prompt_options_a6
 def analysis_generation_page():
     st.header("主题分析生成")
 
@@ -371,7 +372,7 @@ def analysis_generation_page():
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
 
     fixed_prompt_options_a6 = aisettings_df['a6'].dropna().tolist()
-    selected_fixed_prompt_a6 = st.selectbox("选择关键词生成模板", fixed_prompt_options_a6, key="fixed_prompt_main")
+    selected_fixed_prompt_a6 = st.selectbox("选择关键词生成模板", fixed_prompt_options_a6)
 
     generate_links = st.checkbox("是否生成关键词相关的搜索链接", value=True)
 
@@ -385,10 +386,9 @@ def analysis_generation_page():
                     st.session_state.analysis_rounds.append({
                         'type': 'keywords',
                         'content': new_analysis_keywords,
-                        'generate_links': generate_links
+                        'generate_links': generate_links,
+                        'fixed_prompt': selected_fixed_prompt_a6  # 存储使用的模板
                     })
-                    # 存储主页面的模板选择
-                    st.session_state["fixed_prompt_main"] = selected_fixed_prompt_a6
                     st.session_state.trigger_rerun = True
         else:
             st.warning("请输入文本生成提示词！")
@@ -408,7 +408,8 @@ def analysis_generation_page():
                 selected_text_model,
                 fixed_prompt_options_a6,  # 传递模板选项列表
                 round_idx,
-                round_data['generate_links']
+                round_data['generate_links'],
+                round_data['fixed_prompt']  # 传递当前轮次使用的模板
             )
         elif round_data['type'] == 'article':
             st.subheader(f"分析文章：第 {round_idx + 1} 轮")
@@ -418,7 +419,6 @@ def analysis_generation_page():
     if st.session_state.trigger_rerun:
         st.session_state.trigger_rerun = False
         st.experimental_rerun()
-
 
 
 def rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append):
