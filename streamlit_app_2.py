@@ -287,28 +287,39 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
 
         # 第一个下拉框，用于生成文章
         with col2:
+            select_a7_key = f"a7_template_select_{round_idx}_{idx}"
+            if select_a7_key not in st.session_state:
+                st.session_state[select_a7_key] = a7_options[0]  # 默认值
+
             selected_a7_option = st.selectbox(
                 f"选择命令 (关键词: {keyword})",
                 a7_options,
-                key=f"a7_template_select_{round_idx}_{idx}"
+                index=a7_options.index(st.session_state[select_a7_key]),
+                key=select_a7_key
             )
 
         # 第二个下拉框，用于生成更多关键词
         with col3:
+            select_fixed_prompt_key = f"fixed_prompt_select_{round_idx}_{idx}"
+            if select_fixed_prompt_key not in st.session_state:
+                st.session_state[select_fixed_prompt_key] = fixed_prompt_options_a6[0]  # 默认值
+
             selected_fixed_prompt = st.selectbox(
                 f"选择模板 (关键词: {keyword})",
                 fixed_prompt_options_a6,
-                key=f"fixed_prompt_select_{round_idx}_{idx}"
+                index=fixed_prompt_options_a6.index(st.session_state[select_fixed_prompt_key]),
+                key=select_fixed_prompt_key
             )
 
         # 确认按钮触发生成操作
         with col4:
             if st.button(f"确认 (关键词: {keyword})", key=f"confirm_button_{round_idx}_{idx}"):
-                # 只有在用户选择了有效的选项时，才执行生成逻辑
+                # 检查用户是否选择了有效的选项
                 if selected_a7_option != '请选择命令' or selected_fixed_prompt != '请选择模板':
                     handle_selection(keyword, selected_a7_option, selected_fixed_prompt, selected_language, selected_text_model)
                 else:
                     st.warning("请选择有效的命令或模板！")
+
 
 def handle_selection(keyword, a7_option, fixed_prompt, language, model):
     # 如果选择了 a7 下拉框命令，生成文章
