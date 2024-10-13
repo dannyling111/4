@@ -392,19 +392,16 @@ def analysis_generation_page():
         st.session_state.input_text_prompt_analysis = ''
         st.success("所有结果已清除！")
 
+    # 显示生成的关键词和下拉框
     for round_idx, round_data in enumerate(st.session_state.analysis_rounds):
         if round_data['type'] == 'keywords':
             st.subheader(f"第 {round_idx + 1} 轮生成的主题关键词")
             display_analysis_keywords(
                 round_data['content'], selected_language, selected_text_model, round_idx, round_data['generate_links']
             )
-        elif round_data['type'] == 'article':
-            st.subheader(f"分析文章：第 {round_idx + 1} 轮")
-            st.write(round_data['content'])
 
-    # Add this line at the end of the function
+    # 在页面底部显示所有生成的结果
     display_analysis_results()
-
 
 
 def rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append):
