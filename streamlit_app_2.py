@@ -435,38 +435,35 @@ def japanese_learning_page():
 
 def excel_page():
     st.header("Excel 文件读取与编辑")
-    
-    # 上传Excel文件
-    uploaded_file = st.file_uploader("上传一个Excel文件", type=["xlsx"])
-    
-    if uploaded_file:
-        # 读取上传的Excel文件并显示内容
-        try:
-            df = pd.read_excel(uploaded_file, sheet_name=None)  # 支持多Sheet
-            sheet_names = list(df.keys())
-            selected_sheet = st.selectbox("选择工作表", sheet_names)  # 选择Sheet
-            st.write(f"**正在查看表：{selected_sheet}**")
 
-            # 显示数据表
-            data = df[selected_sheet]
-            edited_data = st.experimental_data_editor(data, use_container_width=True)  # 编辑器
+    # 预设 Excel 文件路径（你已经在代码中定义）
+    xlsx_path = "aisetting.xlsx"
 
-            # 保存编辑后的数据
-            if st.button("保存编辑后的文件"):
-                save_path = "edited_excel.xlsx"
-                with pd.ExcelWriter(save_path, engine='openpyxl') as writer:
-                    edited_data.to_excel(writer, index=False, sheet_name=selected_sheet)
-                st.success(f"文件已保存为 {save_path}")
+    try:
+        # 读取 Excel 文件中的所有 Sheet
+        df = pd.read_excel(xlsx_path, sheet_name=None)  # 支持多个工作表
+        sheet_names = list(df.keys())
+        selected_sheet = st.selectbox("选择工作表", sheet_names)  # 选择 Sheet
 
-                with open(save_path, "rb") as f:
-                    st.download_button(
-                        label="下载编辑后的Excel文件",
-                        data=f,
-                        file_name="edited_excel.xlsx",
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    )
-        except Exception as e:
-            st.error(f"无法读取文件: {e}")
+        # 显示并编辑所选 Sheet 数据
+        st.write(f"**正在查看和编辑表：{selected_sheet}**")
+        data = df[selected_sheet]
+        edited_data = st.experimental_data_editor(data, use_container_width=True)
+
+        # 保存编辑后的数据到原 Excel 文件
+        if st.button("保存编辑后的文件"):
+            with pd.ExcelWriter(xlsx_path, engine='openpyxl') as writer:
+                # 遍历所有 Sheets，保持未编辑的内容，并保存编辑后的内容
+                for sheet_name, sheet_data in df.items():
+                    if sheet_name == selected_sheet:
+                        edited_data.to_excel(writer, index=False, sheet_name=sheet_name)
+                    else:
+                        sheet_data.to_excel(writer, index=False, sheet_name=sheet_name)
+            st.success(f"编辑后的内容已成功保存到 {xlsx_path}")
+
+    except Exception as e:
+        st.error(f"读取或保存 Excel 文件时出错: {e}")
+
 
 
 def main():
