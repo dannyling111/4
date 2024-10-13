@@ -312,10 +312,9 @@ def handle_selection(keyword, a7_option, fixed_prompt, language, model):
             if article:
                 st.session_state.analysis_rounds.append({
                     'type': 'article',
-                    'content': article
+                    'content': article,
+                    'keyword': keyword
                 })
-                st.success(f"成功生成关于 {keyword} 的文章！")
-                st.write(article)
 
     if fixed_prompt:
         with st.spinner(f"根据模板 {fixed_prompt} 生成更多关键词..."):
@@ -324,10 +323,18 @@ def handle_selection(keyword, a7_option, fixed_prompt, language, model):
                 st.session_state.analysis_rounds.append({
                     'type': 'keywords',
                     'content': new_keywords,
-                    'generate_links': False
+                    'generate_links': False,
+                    'keyword': keyword
                 })
-                st.success("成功生成更多关键词！")
-                st.write(new_keywords)
+
+def display_analysis_results():
+    for round_data in st.session_state.analysis_rounds:
+        if round_data['type'] == 'article':
+            st.subheader(f"基于关键词 '{round_data['keyword']}' 生成的文章")
+            st.write(round_data['content'])
+        elif round_data['type'] == 'keywords':
+            st.subheader(f"基于关键词 '{round_data['keyword']}' 生成的新关键词")
+            st.write(", ".join(round_data['content']))
 
 def generate_article(keyword, command, language, model):
     prompt = f"关键词: {keyword}\n命令: {command}\n语言: {language}"
