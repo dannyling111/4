@@ -491,7 +491,7 @@ def excel_page():
 
     try:
         # 读取 Excel 文件中的所有工作表
-        df = pd.read_excel(xlsx_path, sheet_name=None)  
+        df = pd.read_excel(xlsx_path, sheet_name=None)
         sheet_names = list(df.keys())  # 获取所有工作表名称
         selected_sheet = st.selectbox("选择工作表", sheet_names)  # 选择工作表
 
@@ -499,20 +499,31 @@ def excel_page():
         data = df[selected_sheet]
         st.write(f"**当前显示的表：{selected_sheet}**")
 
-        # 显示可编辑表格
-        edited_data = st.data_editor(data, use_container_width=True)  # 使用 `st.data_editor`
+        # 为每个工作表创建唯一的 session_state 键
+        edited_data_key = f'edited_data_{selected_sheet}'
+
+        # 检查 session_state 中是否已有编辑后的数据
+        if edited_data_key not in st.session_state:
+            st.session_state[edited_data_key] = data.copy()  # 初始化为原始数据的副本
+
+        # 显示可编辑表格，并更新 session_state
+        edited_data = st.data_editor(st.session_state[edited_data_key], use_container_width=True)
+        st.session_state[edited_data_key] = edited_data
 
         # 按钮保存编辑后的内容
         if st.button("保存编辑后的文件"):
+            # 更新 df 中对应的工作表数据
+            df[selected_sheet] = st.session_state[edited_data_key]
+
+            # 保存所有工作表到 Excel 文件
             with pd.ExcelWriter(xlsx_path, engine='openpyxl') as writer:
-                # 遍历所有工作表，保存编辑后的内容
                 for sheet_name, sheet_data in df.items():
-                    if sheet_name == selected_sheet:
-                        edited_data.to_excel(writer, index=False, sheet_name=sheet_name)  # 保存编辑的数据
-                    else:
-                        sheet_data.to_excel(writer, index=False, sheet_name=sheet_name)  # 保留未编辑的数据
+                    sheet_data.to_excel(writer, index=False, sheet_name=sheet_name)
 
             st.success(f"已成功保存编辑后的内容到 {xlsx_path}")
+
+            # 清除 session_state 中的已编辑数据，以便下一次重新加载
+            del st.session_state[edited_data_key]
 
     except Exception as e:
         st.error(f"读取或保存 Excel 文件时出错: {e}")
