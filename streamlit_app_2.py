@@ -287,7 +287,7 @@ def analysis_generation_page():
     fixed_prompt_options_a6 = aisettings_df['a6'].dropna().tolist()
     selected_fixed_prompt_a6 = st.selectbox("选择关键词生成模板", fixed_prompt_options_a6)
 
-    # 主页面上的第二个原始下拉框：选择语言和模型
+    # 保持原始的选择语言和模型
     selected_language = st.selectbox("选择语言", language_options)
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
 
@@ -306,7 +306,7 @@ def analysis_generation_page():
                         'type': 'keywords',
                         'content': new_analysis_keywords,
                         'generate_links': generate_links,
-                        'fixed_prompt': selected_fixed_prompt_a6  # 存储使用的模板
+                        'fixed_prompt': selected_fixed_prompt_a6
                     })
                     st.session_state.trigger_rerun = True
         else:
@@ -336,7 +336,7 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
     # 从 a7 列获取第一个下拉框的选项
     a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
 
-    # 第二个下拉框：来自 a6 列的选项（复用主页面逻辑）
+    # 第二个下拉框：来自 a6 列的选项
     fixed_prompt_options_a6 = aisettings_df['a6'].dropna().tolist()
 
     for idx, keyword in enumerate(keywords):
@@ -388,6 +388,8 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                         'content': analysis_article
                     })
                     st.success(f"成功生成关于 {keyword} 的分析文章！")
+                    # 显示生成的文章内容
+                    st.write(analysis_article)
 
 
 def fetch_text_response(prompt, model):
@@ -400,7 +402,6 @@ def fetch_text_response(prompt, model):
         return reply
 
     return asyncio.run(fetch())
-
 
 
 
