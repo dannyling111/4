@@ -267,32 +267,102 @@ def wordcloud_generation_page():
 
 
 
+def display_analysis_keywords(keywords, selected_language, selected_text_model, round_idx, generate_links):
+    # 从 a7 列获取第一个下拉框的选项
+    a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
+    # 第二个下拉框：来自 a6 列的选项
+    fixed_prompt_options_a6 = aisettings_df['a6'].dropna().tolist()
+
+    for idx, keyword in enumerate(keywords):
+        col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
+
+        with col1:
+            st.markdown(f"**{keyword}**")
+            if generate_links:
+                encoded_keyword = urllib.parse.quote(keyword)
+                google_search = f"https://www.google.com/search?q={encoded_keyword}"
+                youtube_search = f"https://www.youtube.com/results?search_query={encoded_keyword}"
+                bilibili_search = f"https://search.bilibili.com/all?keyword={encoded_keyword}"
+                st.markdown(f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})")
+
+        with col2:
+            selected_a7_option = st.selectbox(
+                f"选择命令 (关键词: {keyword})",
+                a7_options,
+                key=f"a7_template_select_{round_idx}_{idx}"
+            )
+
+        with col3:
+            selected_fixed_prompt = st.selectbox(
+                f"选择模板 (关键词: {keyword})",
+                fixed_prompt_options_a6,
+                key=f"fixed_prompt_select_{round_idx}_{idx}"
+            )
+
+        with col4:
+            if st.button(f"确认 (关键词: {keyword})", key=f"confirm_button_{round_idx}_{idx}"):
+                handle_selection(keyword, selected_a7_option, selected_fixed_prompt, selected_language, selected_text_model)
+
+
+def handle_selection(keyword, a7_option, fixed_prompt, language, model):
+    if a7_option != '请选择命令':
+        with st.spinner(f"生成关于 {keyword} 的文章..."):
+            article = generate_article(keyword, a7_option, language, model)
+            if article:
+                st.session_state.analysis_rounds.append({
+                    'type': 'article',
+                    'content': article
+                })
+                st.success(f"成功生成关于 {keyword} 的文章！")
+
+    if fixed_prompt:
+        with st.spinner(f"根据模板 {fixed_prompt} 生成更多关键词..."):
+            new_keywords = generate_keywords_and_links(keyword, language, model, fixed_prompt)
+            if new_keywords:
+                st.session_state.analysis_rounds.append({
+                    'type': 'keywords',
+                    'content': new_keywords,
+                    'generate_links': False
+                })
+                st.success("成功生成更多关键词！")
+
+
+def generate_article(keyword, command, language, model):
+    prompt = f"关键词: {keyword}\n命令: {command}\n语言: {language}"
+    return fetch_text_response(prompt, model)
+
+
+def fetch_text_response(prompt, model):
+    async def fetch():
+        message = ProtocolMessage(role="user", content=prompt)
+        reply = ""
+        async for partial in get_bot_response(messages=[message], bot_name=model, api_key=api_key):
+            response = json.loads(partial.raw_response["text"])
+            reply += response["text"]
+        return reply
+
+    return asyncio.run(fetch())
+
+
 def analysis_generation_page():
     st.header("主题分析生成")
 
-    # 初始化 session state 中的变量
     if 'input_text_prompt_analysis' not in st.session_state:
         st.session_state.input_text_prompt_analysis = ''
     if 'analysis_rounds' not in st.session_state:
         st.session_state.analysis_rounds = []
-    if 'trigger_rerun' not in st.session_state:
-        st.session_state.trigger_rerun = False
 
-    # 输入提示词
     input_text_prompt_analysis = st.text_input(
         "请输入文本生成提示词", value=st.session_state.input_text_prompt_analysis)
 
-    # 主页面上的第一个原始下拉框（来自 a6 列）
-    fixed_prompt_options_a6 = aisettings_df['a6'].dropna().tolist()
-    selected_fixed_prompt_a6 = st.selectbox("选择关键词生成模板", fixed_prompt_options_a6)
-
-    # 选择语言和模型
     selected_language = st.selectbox("选择语言", language_options)
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
 
+    fixed_prompt_options_a6 = aisettings_df['a6'].dropna().tolist()
+    selected_fixed_prompt_a6 = st.selectbox("选择关键词生成模板", fixed_prompt_options_a6)
+
     generate_links = st.checkbox("是否生成关键词相关的搜索链接", value=True)
 
-    # 按钮：生成关键词
     if st.button("生成关键词"):
         if input_text_prompt_analysis.strip():
             with st.spinner("正在生成关键词..."):
@@ -305,108 +375,24 @@ def analysis_generation_page():
                         'content': new_keywords,
                         'generate_links': generate_links
                     })
-                    st.session_state.trigger_rerun = True
         else:
             st.warning("请输入文本生成提示词！")
 
     if st.button("清除结果"):
         st.session_state.analysis_rounds = []
         st.session_state.input_text_prompt_analysis = ''
-        st.session_state.trigger_rerun = True
         st.success("所有结果已清除！")
 
-    # 显示每一轮的结果
     for round_idx, round_data in enumerate(st.session_state.analysis_rounds):
         if round_data['type'] == 'keywords':
             st.subheader(f"第 {round_idx + 1} 轮生成的主题关键词")
-            display_keywords_and_actions(
+            display_analysis_keywords(
                 round_data['content'], selected_language, selected_text_model, round_idx, round_data['generate_links']
             )
         elif round_data['type'] == 'article':
             st.subheader(f"分析文章：第 {round_idx + 1} 轮")
             st.write(round_data['content'])
 
-    # 检查是否需要重新运行
-    if st.session_state.trigger_rerun:
-        st.session_state.trigger_rerun = False
-        st.experimental_set_query_params(**st.session_state)
-
-
-def display_keywords_and_actions(keywords, selected_language, selected_text_model, round_idx, generate_links):
-    # 从 a7 列获取第一个下拉框的选项
-    a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
-
-    # 第二个下拉框：来自 a6 列的选项
-    fixed_prompt_options_a6 = aisettings_df['a6'].dropna().tolist()
-
-    for idx, keyword in enumerate(keywords):
-        col1, col2, col3 = st.columns([3, 2, 2])
-
-        with col1:
-            st.markdown(f"**{keyword}**")
-            if generate_links:
-                encoded_keyword = urllib.parse.quote(keyword)
-                google_search = f"https://www.google.com/search?q={encoded_keyword}"
-                youtube_search = f"https://www.youtube.com/results?search_query={encoded_keyword}"
-                bilibili_search = f"https://search.bilibili.com/all?keyword={encoded_keyword}"
-                st.markdown(f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})")
-
-        with col2:
-            # 第一个下拉框：来自 a7 列的选项
-            selected_a7_option = st.selectbox(
-                f"选择命令 (关键词: {keyword})",
-                a7_options,
-                key=f"a7_template_select_{round_idx}_{idx}"
-            )
-
-        with col3:
-            # 第二个下拉框：来自 a6 列的选项
-            selected_fixed_prompt = st.selectbox(
-                f"选择模板 (关键词: {keyword})",
-                fixed_prompt_options_a6,
-                key=f"fixed_prompt_select_{round_idx}_{idx}"
-            )
-
-        # 根据下拉框的选择执行不同的操作
-        if selected_a7_option != '请选择命令':
-            generate_article_for_keyword(keyword, selected_a7_option, selected_language, selected_text_model)
-
-        if selected_fixed_prompt:
-            generate_more_keywords(keyword, selected_fixed_prompt, selected_language, selected_text_model)
-
-
-def generate_article_for_keyword(keyword, command, language, model):
-    with st.spinner(f"正在生成关于 {keyword} 的文章..."):
-        prompt = f"关键词: {keyword}\n命令: {command}\n语言: {language}"
-        article = fetch_text_response(prompt, model)
-        if article:
-            st.session_state.analysis_rounds.append({
-                'type': 'article',
-                'content': article
-            })
-            st.success(f"成功生成关于 {keyword} 的文章！")
-
-def generate_more_keywords(keyword, template, language, model):
-    with st.spinner(f"正在根据 {template} 生成更多关键词..."):
-        new_keywords = generate_keywords_and_links(keyword, language, model, template)
-        if new_keywords:
-            st.session_state.analysis_rounds.append({
-                'type': 'keywords',
-                'content': new_keywords,
-                'generate_links': False
-            })
-            st.success(f"成功生成更多关键词！")
-
-def fetch_text_response(prompt, model):
-    async def fetch():
-        message = ProtocolMessage(role="user", content=prompt)
-        reply = ""
-        async for partial in get_bot_response(messages=[message], bot_name=model, api_key=api_key):
-            response = json.loads(partial.raw_response["text"])
-            reply += response["text"]
-        return reply
-
-    return asyncio.run(fetch())
 
 
 
