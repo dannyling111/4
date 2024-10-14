@@ -466,27 +466,50 @@ def analysis_generation_page():
 
 
 
-def handle_selection(keyword, command, template, language, model, generate_links):
-    """根据选择的命令或模板生成结果。"""
-    if command != '':
-        with st.spinner(f"根据命令 {command} 生成文章..."):
-            article = generate_article(keyword, command, language, model)
+def handle_selection(keyword, a7_option, fixed_prompt, language, model, generate_links):
+
+    # 如果选择了 a7 下拉框命令，生成文章
+
+    if a7_option != '请选择命令':
+
+        with st.spinner(f"生成关于 {keyword} 的文章..."):
+
+            article = generate_article(keyword, a7_option, language, model)
+
             if article:
+
                 st.session_state.analysis_rounds.append({
+
                     'type': 'article',
+
                     'content': article
+
                 })
+
                 st.success(f"成功生成关于 {keyword} 的文章！")
 
-    if template != '':
-        with st.spinner(f"根据模板 {template} 生成更多关键词..."):
-            new_keywords = generate_keywords_and_links(keyword, language, model, template)
+
+
+    # 如果选择了模板，生成更多关键词
+
+    if fixed_prompt != '请选择模板':
+
+        with st.spinner(f"根据模板 {fixed_prompt} 生成更多关键词..."):
+
+            new_keywords = generate_keywords_and_links(keyword, language, model, fixed_prompt)
+
             if new_keywords:
+
                 st.session_state.analysis_rounds.append({
+
                     'type': 'keywords',
+
                     'content': new_keywords,
-                    'generate_links': generate_links
+
+                    'generate_links': generate_links  # 使用当前的 generate_links 设置
+
                 })
+
                 st.success("成功生成更多关键词！")
 def rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append):
     with st.spinner(f"正在使用关键词 {keyword} 重新生成..."):
