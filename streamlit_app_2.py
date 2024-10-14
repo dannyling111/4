@@ -369,42 +369,56 @@ def fetch_text_response(prompt, model):
 def analysis_generation_page():
     st.header("主题分析生成")
 
+    # 初始化 session_state 存储变量
     if 'input_text_prompt_analysis' not in st.session_state:
         st.session_state.input_text_prompt_analysis = ''
     if 'analysis_rounds' not in st.session_state:
         st.session_state.analysis_rounds = []
 
+    # **新增两个下拉框：从 a7 和 a6 列读取选项**
+    a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
+    a6_options = ['请选择模板'] + aisettings_df['a6'].dropna().tolist()
+
+    # **第一个下拉框：命令选择**
+    selected_command = st.selectbox("选择命令", a7_options)
+
+    # **第二个下拉框：模板选择**
+    selected_template = st.selectbox("选择关键词生成模板", a6_options)
+
+    # **输入文本提示词**
     input_text_prompt_analysis = st.text_input(
         "请输入文本生成提示词", value=st.session_state.input_text_prompt_analysis)
 
+    # **选择语言和模型**
     selected_language = st.selectbox("选择语言", language_options)
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
 
-    fixed_prompt_options_a6 = aisettings_df['a6'].dropna().tolist()
-    selected_fixed_prompt_a6 = st.selectbox("选择关键词生成模板", fixed_prompt_options_a6)
-
+    # **是否生成关键词链接的选项**
     generate_links = st.checkbox("是否生成关键词相关的搜索链接", value=True)
 
+    # **生成关键词按钮**
     if st.button("生成关键词"):
         if input_text_prompt_analysis.strip():
             with st.spinner("正在生成关键词..."):
                 new_keywords = generate_keywords_and_links(
-                    input_text_prompt_analysis, selected_language, selected_text_model, selected_fixed_prompt_a6
+                    input_text_prompt_analysis, selected_language, selected_text_model, selected_template
                 )
                 if new_keywords:
                     st.session_state.analysis_rounds.append({
                         'type': 'keywords',
                         'content': new_keywords,
-                        'generate_links': generate_links  # 确保正确设置 generate_links
+                        'generate_links': generate_links  # 使用当前 generate_links 设置
                     })
         else:
             st.warning("请输入文本生成提示词！")
 
+    # **清除结果按钮**
     if st.button("清除结果"):
         st.session_state.analysis_rounds = []
         st.session_state.input_text_prompt_analysis = ''
         st.success("所有结果已清除！")
 
+    # **显示生成的结果**
     for round_idx, round_data in enumerate(st.session_state.analysis_rounds):
         if round_data['type'] == 'keywords':
             st.subheader(f"第 {round_idx + 1} 轮生成的主题关键词")
@@ -414,9 +428,6 @@ def analysis_generation_page():
         elif round_data['type'] == 'article':
             st.subheader(f"分析文章：第 {round_idx + 1} 轮")
             st.write(round_data['content'])
-
-
-
 
 
 def rerun_with_keyword(keyword, selected_language, selected_text_model, fixed_prompt_append):
