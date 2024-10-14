@@ -105,7 +105,7 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
     fixed_prompt_options_a6 = ['请选择模板'] + aisettings_df['a6'].dropna().tolist()
 
     for idx, keyword in enumerate(keywords):
-        col1, col2, col3 = st.columns([3, 2, 2])
+        col1, col2 = st.columns([3, 2])  # Two columns: keyword | dropdowns stacked vertically
 
         with col1:
             st.markdown(f"**{keyword}**")
@@ -116,13 +116,12 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                 bilibili_search = f"https://search.bilibili.com/all?keyword={encoded_keyword}"
                 st.markdown(f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})")
 
-        # First dropdown for generating articles
+        # Stack the two dropdowns vertically within the same column
         with col2:
+            # Dropdown 1: Command selection
             select_a7_key = f"a7_template_select_{round_idx}_{idx}"
             selected_a7_option = st.selectbox(
-                "选择命令",
-                a7_options,
-                key=select_a7_key
+                "选择命令", a7_options, key=select_a7_key
             )
 
             # Initialize previous selection
@@ -130,19 +129,16 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
             if prev_select_a7_key not in st.session_state:
                 st.session_state[prev_select_a7_key] = a7_options[0]
 
-            # Check if selection has changed
+            # Check if selection changed
             if selected_a7_option != st.session_state[prev_select_a7_key]:
-                st.session_state[prev_select_a7_key] = selected_a7_option  # Update previous selection
+                st.session_state[prev_select_a7_key] = selected_a7_option
                 if selected_a7_option != '请选择命令':
                     handle_selection(keyword, selected_a7_option, '请选择模板', selected_language, selected_text_model, generate_links)
 
-        # Second dropdown for generating more keywords
-        with col3:
+            # Dropdown 2: Template selection
             select_fixed_prompt_key = f"fixed_prompt_select_{round_idx}_{idx}"
             selected_fixed_prompt = st.selectbox(
-                "选择模板",
-                fixed_prompt_options_a6,
-                key=select_fixed_prompt_key
+                "选择模板", fixed_prompt_options_a6, key=select_fixed_prompt_key
             )
 
             # Initialize previous selection
@@ -150,11 +146,12 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
             if prev_select_fixed_prompt_key not in st.session_state:
                 st.session_state[prev_select_fixed_prompt_key] = fixed_prompt_options_a6[0]
 
-            # Check if selection has changed
+            # Check if selection changed
             if selected_fixed_prompt != st.session_state[prev_select_fixed_prompt_key]:
-                st.session_state[prev_select_fixed_prompt_key] = selected_fixed_prompt  # Update previous selection
+                st.session_state[prev_select_fixed_prompt_key] = selected_fixed_prompt
                 if selected_fixed_prompt != '请选择模板':
                     handle_selection(keyword, '请选择命令', selected_fixed_prompt, selected_language, selected_text_model, generate_links)
+
 
 def handle_selection(keyword, a7_option, fixed_prompt, language, model, generate_links):
     # If an a7 option is selected, generate an article
