@@ -103,22 +103,19 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
     a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
     fixed_prompt_options_a6 = ['请选择模板'] + aisettings_df['a6'].dropna().tolist()
 
-    # Loop over keywords and alternate background colors (light gray and white)
+    # Loop through keywords and create sections with consistent gray borders
     for idx, keyword in enumerate(keywords):
-        # Alternate background color: light gray (#f9f9f9) or white (#ffffff)
-        bg_color = "#f9f9f9" if idx % 2 == 0 else "#ffffff"
-
-        # Define CSS style for the container
+        # Define a consistent gray background color and border
         container_style = f"""
             <div style="
-                background-color: {bg_color};
+                background-color: #f0f0f0;
                 padding: 10px;
                 margin-bottom: 10px;
                 border-radius: 8px;
-                border: 1px solid #e0e0e0;">
+                border: 1px solid #d0d0d0;">
         """
 
-        # Render the container with alternating background colors and borders
+        # Render the styled container
         st.markdown(container_style, unsafe_allow_html=True)
 
         # Use Streamlit columns inside the styled container
@@ -170,6 +167,7 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
 
         # Close the container
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 
