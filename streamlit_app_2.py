@@ -99,13 +99,30 @@ def generate_keywords_and_links(input_text, language, model, fixed_prompt_append
             return []
 
 def display_analysis_keywords(keywords, selected_language, selected_text_model, round_idx, generate_links):
-    # Get options from a7 column
+    # Get options from a7 and a6 columns
     a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
-    # Second dropdown: options from a6 column
     fixed_prompt_options_a6 = ['请选择模板'] + aisettings_df['a6'].dropna().tolist()
 
+    # Loop over keywords and alternate background colors (light gray and white)
     for idx, keyword in enumerate(keywords):
-        col1, col2 = st.columns([3, 2])  # Two columns: keyword | dropdowns stacked vertically
+        # Alternate background color: light gray (#f9f9f9) or white (#ffffff)
+        bg_color = "#f9f9f9" if idx % 2 == 0 else "#ffffff"
+
+        # Define CSS style for the container
+        container_style = f"""
+            <div style="
+                background-color: {bg_color};
+                padding: 10px;
+                margin-bottom: 10px;
+                border-radius: 8px;
+                border: 1px solid #e0e0e0;">
+        """
+
+        # Render the container with alternating background colors and borders
+        st.markdown(container_style, unsafe_allow_html=True)
+
+        # Use Streamlit columns inside the styled container
+        col1, col2 = st.columns([3, 2])  # Two columns: keyword | dropdowns
 
         with col1:
             st.markdown(f"**{keyword}**")
@@ -116,7 +133,6 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                 bilibili_search = f"https://search.bilibili.com/all?keyword={encoded_keyword}"
                 st.markdown(f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})")
 
-        # Stack the two dropdowns vertically within the same column
         with col2:
             # Dropdown 1: Command selection
             select_a7_key = f"a7_template_select_{round_idx}_{idx}"
@@ -151,6 +167,10 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                 st.session_state[prev_select_fixed_prompt_key] = selected_fixed_prompt
                 if selected_fixed_prompt != '请选择模板':
                     handle_selection(keyword, '请选择命令', selected_fixed_prompt, selected_language, selected_text_model, generate_links)
+
+        # Close the container
+        st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 def handle_selection(keyword, a7_option, fixed_prompt, language, model, generate_links):
