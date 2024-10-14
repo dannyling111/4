@@ -14,39 +14,38 @@ import google.generativeai as genai
 import urllib.parse
 import openpyxl
 
-# Configure Matplotlib for Streamlit compatibility
+# 配置 Matplotlib 与 Streamlit 兼容
 plt.switch_backend('Agg')
 
-# Load API keys and configure models
+# 加载 API keys 和配置模型
 api_key = st.secrets["api_keys"]["my_api_key"]
 gemini_api_key = st.secrets["api_keys"]["gemini_api_key"]
 genai.configure(api_key=gemini_api_key)
 
-# Models
+# 模型列表
 gemini_bots = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-1.0-pro"]
 text_bots = gemini_bots + ["GPT-3.5-Turbo", "GPT-4", "Claude-3-Opus"]
 
-# Excel file path
+# 加载 Excel 文件
 xlsx_path = "aisetting.xlsx"
 aisettings_df = pd.read_excel(xlsx_path)
 
-# Helper function to call text-generation API asynchronously
+# Helper: 异步获取生成的文本
 async def fetch_text_response(prompt, model):
     message = ProtocolMessage(role="user", content=prompt)
     reply = ""
-    async for partial in get_bot_response(
-        messages=[message], bot_name=model, api_key=api_key
-    ):
+    async for partial in get_bot_response(messages=[message], bot_name=model, api_key=api_key):
         response = json.loads(partial.raw_response["text"])
         reply += response["text"]
     return reply
 
-# Function to generate keywords asynchronously
+# 生成关键词并生成链接
 def generate_keywords_and_links(input_text, language, model, fixed_prompt_append):
     prompt = f"{input_text}\n{fixed_prompt_append}\nLanguage: {language}" if language else input_text
-    return asyncio.run(fetch_text_response(prompt, model)).splitlines()
+    response = asyncio.run(fetch_text_response(prompt, model))
+    return [line.strip()[2:] for line in response.splitlines() if line.startswith("-")]
 
-# Word Cloud Generation Functions
+# Word Cloud 页面：获取 Google Trends 数据并生成词云
 def get_google_trends():
     pytrends = TrendReq(hl='en-US', tz=360)
     countries = [
@@ -97,7 +96,7 @@ def wordcloud_generation_page():
                 youtube_link = f"https://www.youtube.com/results?search_query={keyword}"
                 st.markdown(f"- {keyword}: [Google]({google_link}) | [YouTube]({youtube_link})")
 
-# Analysis Generation Page
+# Analysis Generation 页面
 def display_analysis_keywords(keywords, selected_language, selected_text_model, round_idx, generate_links):
     for idx, keyword in enumerate(keywords):
         col1, col2 = st.columns([3, 1])
@@ -148,7 +147,7 @@ def analysis_generation_page():
             round_data['content'], selected_language, selected_text_model, round_idx, round_data['generate_links']
         )
 
-# Excel Page Function
+# Excel 页面功能
 def excel_page():
     st.header("Excel 文件读取与编辑")
     try:
@@ -173,7 +172,7 @@ def excel_page():
     except Exception as e:
         st.error(f"读取或保存 Excel 文件时出错: {e}")
 
-# Main Function
+# 主函数
 def main():
     st.sidebar.title("导航")
     page = st.sidebar.selectbox("选择页面", ["词云生成", "主题分析生成", "Excel"])
