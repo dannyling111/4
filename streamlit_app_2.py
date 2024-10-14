@@ -208,9 +208,10 @@ def wordcloud_generation_page():
             sorted_keywords = sorted(keyword_frequencies.items(), key=lambda x: x[1], reverse=True)[:20]
             st.subheader("关键词搜索链接")
             for keyword, _ in sorted_keywords:
-                google_search_link = f"https://www.google.com/search?q={keyword}"
-                google_news_link = f"https://news.google.com/search?q={keyword}"
-                youtube_link = f"https://www.youtube.com/results?search_query={keyword}"
+                encoded_keyword = urllib.parse.quote(keyword)  # URL-encode the keyword
+                google_search_link = f"https://www.google.com/search?q={encoded_keyword}"
+                google_news_link = f"https://news.google.com/search?q={encoded_keyword}"
+                youtube_link = f"https://www.youtube.com/results?search_query={encoded_keyword}"
                 st.markdown(f"- {keyword}: [Google Search]({google_search_link}) | [Google News]({google_news_link}) | [YouTube]({youtube_link})")
 
 def analysis_generation_page():
