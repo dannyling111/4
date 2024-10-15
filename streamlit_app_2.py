@@ -119,7 +119,7 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
         """
         st.markdown(container_style, unsafe_allow_html=True)
 
-        # 使用列布局展示关键词和下拉菜单
+        # 使用列布局展示关键词、链接和下拉菜单
         col1, col2 = st.columns([3, 2])
 
         # 第一列：显示关键词和链接
@@ -150,22 +150,30 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                 "选择模板", fixed_prompt_options_a6, key=select_fixed_prompt_key
             )
 
-            # 检查模板选择并生成内容
-            if selected_fixed_prompt != '请选择模板':
-                with st.spinner(f"根据模板 '{selected_fixed_prompt}' 生成关键词内容..."):
-                    new_keywords = generate_keywords_and_links(
-                        keyword, selected_language, selected_text_model, selected_fixed_prompt
-                    )
-                    if new_keywords:
-                        # 将新生成的关键词内容显示在该部分下方
-                        st.write("生成的关键词：")
-                        for new_keyword in new_keywords:
-                            st.markdown(f"- **{new_keyword}**")
+        # **将生成内容的代码块移出列布局**
+        # 检查模板选择并生成新的关键词
+        if selected_fixed_prompt != '请选择模板':
+            with st.spinner(f"根据模板 '{selected_fixed_prompt}' 生成关键词..."):
+                new_keywords = generate_keywords_and_links(
+                    keyword, selected_language, selected_text_model, selected_fixed_prompt
+                )
+                if new_keywords:
+                    st.write("生成的关键词：")
+                    for new_keyword in new_keywords:
+                        st.markdown(f"- **{new_keyword}**")
+
+        # 检查命令选择并生成文章
+        if selected_a7_option != '请选择命令':
+            with st.spinner(f"根据命令 '{selected_a7_option}' 生成内容..."):
+                article = generate_article(
+                    keyword, selected_a7_option, selected_language, selected_text_model
+                )
+                if article:
+                    st.write("生成的内容：")
+                    st.write(article)
 
         # 关闭容器样式
         st.markdown("</div>", unsafe_allow_html=True)
-
-
 
 
 
