@@ -99,13 +99,10 @@ def generate_keywords_and_links(input_text, language, model, fixed_prompt_append
             return []
 
 def display_analysis_keywords(keywords, selected_language, selected_text_model, round_idx, generate_links):
-    # Get options from a7 and a6 columns
     a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
     fixed_prompt_options_a6 = ['请选择模板'] + aisettings_df['a6'].dropna().tolist()
 
-    # Loop through keywords and create sections with consistent gray borders
     for idx, keyword in enumerate(keywords):
-        # Define a consistent gray background color and border
         container_style = f"""
             <div style="
                 background-color: #f0f0f0;
@@ -114,12 +111,9 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                 border-radius: 8px;
                 border: 1px solid #d0d0d0;">
         """
-
-        # Render the styled container
         st.markdown(container_style, unsafe_allow_html=True)
 
-        # Use Streamlit columns inside the styled container
-        col1, col2 = st.columns([3, 2])  # Two columns: keyword | dropdowns
+        col1, col2 = st.columns([3, 2])
 
         with col1:
             st.markdown(f"**{keyword}**")
@@ -132,17 +126,15 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
 
         with col2:
             # Dropdown 1: Command selection
-            select_a7_key = f"a7_template_select_{round_idx}_{idx}"
+            select_a7_key = f"a7_command_select_{round_idx}_{idx}"
             selected_a7_option = st.selectbox(
-                "选择命令", a7_options, key=select_a7_key
+                "选择指令", a7_options, key=select_a7_key
             )
 
-            # Initialize previous selection
             prev_select_a7_key = f"prev_{select_a7_key}"
             if prev_select_a7_key not in st.session_state:
                 st.session_state[prev_select_a7_key] = a7_options[0]
 
-            # Check if selection changed
             if selected_a7_option != st.session_state[prev_select_a7_key]:
                 st.session_state[prev_select_a7_key] = selected_a7_option
                 if selected_a7_option != '请选择命令':
@@ -154,20 +146,16 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                 "选择模板", fixed_prompt_options_a6, key=select_fixed_prompt_key
             )
 
-            # Initialize previous selection
             prev_select_fixed_prompt_key = f"prev_{select_fixed_prompt_key}"
             if prev_select_fixed_prompt_key not in st.session_state:
                 st.session_state[prev_select_fixed_prompt_key] = fixed_prompt_options_a6[0]
 
-            # Check if selection changed
             if selected_fixed_prompt != st.session_state[prev_select_fixed_prompt_key]:
                 st.session_state[prev_select_fixed_prompt_key] = selected_fixed_prompt
                 if selected_fixed_prompt != '请选择模板':
                     handle_selection(keyword, '请选择命令', selected_fixed_prompt, selected_language, selected_text_model, generate_links)
 
-        # Close the container
         st.markdown("</div>", unsafe_allow_html=True)
-
 
 
 
@@ -243,6 +231,10 @@ def analysis_generation_page():
     selected_language = st.selectbox("选择语言", language_options)
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
 
+    # Load options for the new 指令 dropdown
+    a7_options = aisettings_df['a7'].dropna().tolist()
+    selected_command_a7 = st.selectbox("选择指令", a7_options)
+
     fixed_prompt_options_a6 = aisettings_df['a6'].dropna().tolist()
     selected_fixed_prompt_a6 = st.selectbox("选择关键词生成模板", fixed_prompt_options_a6)
 
@@ -258,7 +250,8 @@ def analysis_generation_page():
                     st.session_state.analysis_rounds.append({
                         'type': 'keywords',
                         'content': new_keywords,
-                        'generate_links': generate_links  # Ensure correct setting
+                        'command': selected_command_a7,  # Include the command in state
+                        'generate_links': generate_links
                     })
         else:
             st.warning("请输入文本生成提示词！")
@@ -277,6 +270,7 @@ def analysis_generation_page():
         elif round_data['type'] == 'article':
             st.subheader(f"分析文章：第 {round_idx + 1} 轮")
             st.write(round_data['content'])
+
 
 # Page Block: Excel File Reading and Editing
 def excel_page():
