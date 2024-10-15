@@ -20,7 +20,6 @@ from io import BytesIO
 import matplotlib.pyplot as plt
 import openpyxl
 import urllib.parse
-import uuid  # 新增
 
 # Configure Matplotlib to use 'Agg' backend for Streamlit compatibility
 plt.switch_backend('Agg')
@@ -100,11 +99,11 @@ def generate_keywords_and_links(input_text, language, model, fixed_prompt_append
             return []
 
 def generate_label(depth, idx):
-    label_parts = ['1'] * depth + [str(idx + 1)]
+    label_parts = ['1'] * (depth - 1) + [str(idx + 1)]
     label = '.'.join(label_parts)
     return label
 
-def display_analysis_keywords(keywords, selected_language, selected_text_model, round_idx, generate_links, depth=1):
+def display_analysis_keywords(keywords, selected_language, selected_text_model, round_idx, generate_links, depth=1, path=None):
     """
     展示生成的关键词，并动态生成相关内容、链接和下拉菜单。
 
@@ -115,9 +114,13 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
     - round_idx: 当前轮次的索引
     - generate_links: 是否生成关键词的链接
     - depth: 递归深度，默认值为1，用于生成编号
+    - path: 用于生成唯一键的路径
     """
     # 设置递归深度的最大值，避免无限递归
     MAX_DEPTH = 3  # 您可以根据需要调整最大深度
+
+    if path is None:
+        path = []
 
     # 定义每轮的颜色
     round_colors = ['#e6f7ff', '#fff1f0', '#f6ffed', '#fff7e6', '#f9f0ff']
@@ -156,27 +159,31 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                 f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})"
             )
 
+        # 更新路径
+        current_path = path + [idx]
+        path_str = "_".join(map(str, current_path))
+
         # 下拉菜单
-        select_a7_key = f"a7_template_select_{round_idx}_{idx}_{depth}_{uuid.uuid4()}"
+        select_a7_key = f"a7_template_select_{round_idx}_{path_str}"
         selected_a7_option = st.selectbox(
             "选择命令", a7_options, key=select_a7_key
         )
 
-        select_fixed_prompt_key = f"fixed_prompt_select_{round_idx}_{idx}_{depth}_{uuid.uuid4()}"
+        select_fixed_prompt_key = f"fixed_prompt_select_{round_idx}_{path_str}"
         selected_fixed_prompt = st.selectbox(
             "选择模板", fixed_prompt_options_a6, key=select_fixed_prompt_key
         )
 
         # 定义用于存储生成内容的状态键
-        content_key = f"content_{select_fixed_prompt_key}"
-        article_key = f"article_{select_a7_key}"
+        content_key = f"content_{round_idx}_{path_str}"
+        article_key = f"article_{round_idx}_{path_str}"
 
         # 显示之前生成的关键词（如果有）
         if st.session_state.get(content_key):
             st.markdown("**生成的关键词：**")
             display_analysis_keywords(
                 st.session_state[content_key], selected_language, selected_text_model,
-                round_idx, generate_links, depth=depth+1
+                round_idx, generate_links, depth=depth+1, path=current_path
             )
 
         # 显示之前生成的文章（如果有）
@@ -196,12 +203,8 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                     if new_keywords:
                         st.session_state[generated_key] = True  # 标记为已生成
                         st.session_state[content_key] = new_keywords  # 保存生成的关键词
-                        st.markdown("**生成的关键词：**")
-                        # 递归调用 display_analysis_keywords，增加 depth
-                        display_analysis_keywords(
-                            new_keywords, selected_language, selected_text_model,
-                            round_idx, generate_links, depth=depth+1
-                        )
+                        st.experimental_rerun()  # 重新运行以显示新内容
+
         # 检查命令选择并生成文章
         if selected_a7_option != '请选择命令':
             # 使用唯一的状态键保存是否已生成内容，避免重复生成
@@ -214,8 +217,7 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                     if article:
                         st.session_state[generated_key] = True  # 标记为已生成
                         st.session_state[article_key] = article  # 保存生成的文章
-                        st.markdown("**生成的内容：**")
-                        st.write(article)
+                        st.experimental_rerun()  # 重新运行以显示新内容
 
         # 关闭容器样式
         st.markdown("</div>", unsafe_allow_html=True)
