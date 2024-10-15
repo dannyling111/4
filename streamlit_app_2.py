@@ -111,9 +111,6 @@ def generate_label(path, idx):
 def display_analysis_keywords(
     keywords, selected_language, selected_text_model, round_idx, generate_links, depth=1, path=None
 ):
-    """
-    展示生成的关键词，并动态创建相关内容、链接和下拉菜单。
-    """
     MAX_DEPTH = 3  # 限制递归层级
     if depth > MAX_DEPTH:
         return  # 超出最大层级时停止递归
@@ -165,7 +162,7 @@ def display_analysis_keywords(
         content_key = f"content_{path_str}"
         article_key = f"article_{path_str}"
 
-        # 显示生成的关键词
+        # 显示已生成的关键词
         if content_key in st.session_state:
             st.markdown("**生成的关键词：**")
             display_analysis_keywords(
@@ -173,12 +170,12 @@ def display_analysis_keywords(
                 round_idx, generate_links, depth + 1, current_path
             )
 
-        # 显示文章
+        # 显示文章内容
         if article_key in st.session_state:
             st.markdown("**生成的内容：**")
             st.write(st.session_state[article_key])
 
-        # 生成新关键词并刷新页面
+        # 生成新关键词逻辑
         if selected_fixed_prompt != '请选择模板' and content_key not in st.session_state:
             with st.spinner(f"根据模板 '{selected_fixed_prompt}' 生成关键词..."):
                 new_keywords = generate_keywords_and_links(
@@ -186,9 +183,10 @@ def display_analysis_keywords(
                 )
                 if new_keywords:
                     st.session_state[content_key] = new_keywords
-                    st.experimental_rerun()  # 触发页面重绘
+                    # 仅在生成新内容时重绘
+                    st.experimental_rerun()
 
-        # 生成文章并刷新页面
+        # 生成文章逻辑
         if selected_a7_option != '请选择命令' and article_key not in st.session_state:
             with st.spinner(f"根据命令 '{selected_a7_option}' 生成内容..."):
                 article = generate_article(
@@ -196,9 +194,11 @@ def display_analysis_keywords(
                 )
                 if article:
                     st.session_state[article_key] = article
-                    st.experimental_rerun()  # 触发页面重绘
+                    # 仅在生成新内容时重绘
+                    st.experimental_rerun()
 
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 
