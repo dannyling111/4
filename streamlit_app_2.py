@@ -79,7 +79,7 @@ def muted_color_func(word, font_size, position, orientation, random_state=None, 
 
 def generate_keywords_and_links(input_text, language, model, fixed_prompt_append):
     # Construct the final prompt including the language option
-    final_prompt = f"{input_text}\n{fixed_prompt_append}\nLanguage: {language}" if language else f"{input_text}\n{fixed_prompt_append}"
+    final_prompt = f"{input_text}\n{fixed_prompt_append}\nLanguage: {language}"
 
     async def fetch_text_response():
         message = ProtocolMessage(role="user", content=final_prompt)
@@ -97,6 +97,7 @@ def generate_keywords_and_links(input_text, language, model, fixed_prompt_append
         except Exception as e:
             st.error(f"Error processing keywords: {str(e)}")
             return []
+
 def display_analysis_keywords(keywords, selected_language, selected_text_model, round_idx, generate_links, depth=0):
     """
     展示生成的关键词，并动态生成相关内容、链接和下拉菜单。
@@ -112,11 +113,8 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
     # 设置递归深度的最大值，避免无限递归
     MAX_DEPTH = 3  # 您可以根据需要调整最大深度
 
-    # 定义一组颜色，用于不同的深度级别
+    # 定义一组颜色，用于不同的关键词
     colors = ['#f0f0f0', '#e6f7ff', '#fff7e6', '#f6ffed', '#f9f0ff', '#fff1f0', '#f0f5ff']
-
-    # 根据深度选择颜色，如果深度超过颜色列表长度，循环使用颜色
-    background_color = colors[depth % len(colors)]
 
     # 获取命令和模板选项
     a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
@@ -124,6 +122,9 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
 
     # 遍历每个关键词并展示相关内容
     for idx, keyword in enumerate(keywords):
+        # 使用关键词索引来选择颜色，确保每个关键词的容器颜色不同
+        background_color = colors[idx % len(colors)]
+
         # 设置容器样式，使用不同的背景颜色
         container_style = f"""
             <div style="
@@ -168,6 +169,23 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
 
         # **将生成内容的代码块移出列布局**
 
+        # 定义用于存储生成内容的状态键
+        content_key = f"content_{select_fixed_prompt_key}"
+        article_key = f"article_{select_a7_key}"
+
+        # 显示之前生成的关键词（如果有）
+        if st.session_state.get(content_key):
+            st.markdown("**生成的关键词：**")
+            display_analysis_keywords(
+                st.session_state[content_key], selected_language, selected_text_model,
+                round_idx, generate_links, depth=depth+1
+            )
+
+        # 显示之前生成的文章（如果有）
+        if st.session_state.get(article_key):
+            st.markdown("**生成的内容：**")
+            st.write(st.session_state[article_key])
+
         # 检查模板选择并生成新的关键词
         if selected_fixed_prompt != '请选择模板' and depth < MAX_DEPTH:
             # 使用唯一的状态键保存是否已生成内容，避免重复生成
@@ -179,6 +197,7 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                     )
                     if new_keywords:
                         st.session_state[generated_key] = True  # 标记为已生成
+                        st.session_state[content_key] = new_keywords  # 保存生成的关键词
                         st.markdown("**生成的关键词：**")
                         # 递归调用 display_analysis_keywords，增加 depth
                         display_analysis_keywords(
@@ -196,42 +215,16 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                     )
                     if article:
                         st.session_state[generated_key] = True  # 标记为已生成
-                        st.write("生成的内容：")
+                        st.session_state[article_key] = article  # 保存生成的文章
+                        st.markdown("**生成的内容：**")
                         st.write(article)
 
         # 关闭容器样式
         st.markdown("</div>", unsafe_allow_html=True)
 
-
-
-def handle_selection(keyword, a7_option, fixed_prompt, language, model, generate_links):
-    # If an a7 option is selected, generate an article
-    if a7_option != '请选择命令':
-        with st.spinner(f"生成关于 {keyword} 的文章..."):
-            article = generate_article(keyword, a7_option, language, model)
-            if article:
-                st.session_state.analysis_rounds.append({
-                    'type': 'article',
-                    'content': article
-                })
-                st.success(f"成功生成关于 {keyword} 的文章！")
-
-    # If a fixed prompt is selected, generate more keywords
-    if fixed_prompt != '请选择模板':
-        with st.spinner(f"根据模板 {fixed_prompt} 生成更多关键词..."):
-            new_keywords = generate_keywords_and_links(keyword, language, model, fixed_prompt)
-            if new_keywords:
-                st.session_state.analysis_rounds.append({
-                    'type': 'keywords',
-                    'content': new_keywords,
-                    'generate_links': generate_links  # Use the current generate_links setting
-                })
-                st.success("成功生成更多关键词！")
-
 def generate_article(keyword, command, language, model):
     prompt = f"关键词: {keyword}\n命令: {command}\n语言: {language}"
     return fetch_text_response(prompt, model)
-
 
 def fetch_text_response(prompt, model):
     async def fetch():
@@ -262,6 +255,7 @@ def wordcloud_generation_page():
                 google_news_link = f"https://news.google.com/search?q={encoded_keyword}"
                 youtube_link = f"https://www.youtube.com/results?search_query={encoded_keyword}"
                 st.markdown(f"- {keyword}: [Google Search]({google_search_link}) | [Google News]({google_news_link}) | [YouTube]({youtube_link})")
+
 def analysis_generation_page():
     st.header("主题分析生成")
 
@@ -362,8 +356,6 @@ def analysis_generation_page():
         if 'article' in round_data:
             st.subheader(f"分析文章：第 {round_idx + 1} 轮")
             st.write(round_data['article'])
-
-
 
 # Page Block: Excel File Reading and Editing
 def excel_page():
