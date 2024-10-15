@@ -148,24 +148,29 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
 
         st.markdown("</div>", unsafe_allow_html=True)
 
-
 def handle_selection(keyword, a7_option, fixed_prompt, language, model, generate_links):
     # Handle the 指令 option (if selected)
     if a7_option != '未选择':
         with st.spinner(f"生成关于 {keyword} 的文章..."):
             article = generate_article(keyword, a7_option, language, model)
             if article:
-                return article  # Return the generated article
+                st.session_state.analysis_rounds.append({
+                    'type': 'article',
+                    'content': article
+                })
+                st.success(f"成功生成关于 {keyword} 的文章！")
 
     # Handle the 模板 option (if selected)
     if fixed_prompt != '未选择':
         with st.spinner(f"根据模板 {fixed_prompt} 生成更多关键词..."):
             new_keywords = generate_keywords_and_links(keyword, language, model, fixed_prompt)
             if new_keywords:
-                return new_keywords  # Return the generated keywords
-
-    # Default response if nothing was selected
-    return None
+                st.session_state.analysis_rounds.append({
+                    'type': 'keywords',
+                    'content': new_keywords,
+                    'generate_links': generate_links  # Use current generate_links setting
+                })
+                st.success("成功生成更多关键词！")
 
 
 def generate_article(keyword, command, language, model):
