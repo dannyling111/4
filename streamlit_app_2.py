@@ -327,9 +327,15 @@ def analysis_generation_page():
         elif round_data['type'] == 'keywords':
             st.subheader(f"第 {round_idx + 1} 轮生成的关键词")
             display_analysis_keywords(
-                round_data['content'], selected_language, selected_text_model,
-                round_idx, round_data['generate_links']
+                round_data['content'], 
+                selected_language, 
+                selected_text_model,
+                round_idx, 
+                round_data['generate_links'],
+                st.session_state.selected_command,  # 传入指令
+                input_text_prompt_analysis  # 传入主题内容
             )
+
 
 
 
