@@ -97,7 +97,6 @@ def generate_keywords_and_links(input_text, language, model, fixed_prompt_append
         except Exception as e:
             st.error(f"Error processing keywords: {str(e)}")
             return []
-
 def display_analysis_keywords(keywords, selected_language, selected_text_model, round_idx, generate_links):
     a7_options = ['未选择'] + aisettings_df['a7'].dropna().tolist()
     fixed_prompt_options_a6 = ['未选择'] + aisettings_df['a6'].dropna().tolist()
@@ -125,33 +124,27 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                 st.markdown(f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})")
 
         with col2:
+            # Dropdown 1: Command selection
             select_a7_key = f"a7_command_select_{round_idx}_{idx}"
             selected_a7_option = st.selectbox(
                 "选择指令", a7_options, key=select_a7_key
             )
 
-            prev_select_a7_key = f"prev_{select_a7_key}"
-            if prev_select_a7_key not in st.session_state:
-                st.session_state[prev_select_a7_key] = a7_options[0]
+            # Trigger content generation if a valid command is selected
+            if selected_a7_option != '未选择':
+                handle_selection(keyword, selected_a7_option, '未选择', 
+                                 selected_language, selected_text_model, generate_links)
 
-            if selected_a7_option != st.session_state[prev_select_a7_key]:
-                st.session_state[prev_select_a7_key] = selected_a7_option
-                if selected_a7_option != '未选择':
-                    handle_selection(keyword, selected_a7_option, '未选择', selected_language, selected_text_model, generate_links)
-
+            # Dropdown 2: Template selection
             select_fixed_prompt_key = f"fixed_prompt_select_{round_idx}_{idx}"
             selected_fixed_prompt = st.selectbox(
                 "选择模板", fixed_prompt_options_a6, key=select_fixed_prompt_key
             )
 
-            prev_select_fixed_prompt_key = f"prev_{select_fixed_prompt_key}"
-            if prev_select_fixed_prompt_key not in st.session_state:
-                st.session_state[prev_select_fixed_prompt_key] = fixed_prompt_options_a6[0]
-
-            if selected_fixed_prompt != st.session_state[prev_select_fixed_prompt_key]:
-                st.session_state[prev_select_fixed_prompt_key] = selected_fixed_prompt
-                if selected_fixed_prompt != '未选择':
-                    handle_selection(keyword, '未选择', selected_fixed_prompt, selected_language, selected_text_model, generate_links)
+            # Trigger content generation if a valid template is selected
+            if selected_fixed_prompt != '未选择':
+                handle_selection(keyword, '未选择', selected_fixed_prompt, 
+                                 selected_language, selected_text_model, generate_links)
 
         st.markdown("</div>", unsafe_allow_html=True)
 
