@@ -116,13 +116,11 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
     - depth: 递归深度，默认值为1，用于生成编号
     - path: 用于生成唯一键的路径
     """
-    # 设置递归深度的最大值，避免无限递归
-    MAX_DEPTH = 3  # 您可以根据需要调整最大深度
-
+    MAX_DEPTH = 3  # 限制递归深度
     if path is None:
         path = []
 
-    # 定义每轮的颜色
+    # 定义颜色方案，每轮有不同颜色
     round_colors = ['#e6f7ff', '#fff1f0', '#f6ffed', '#fff7e6', '#f9f0ff']
     background_color = round_colors[round_idx % len(round_colors)]
 
@@ -130,12 +128,9 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
     a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
     fixed_prompt_options_a6 = ['请选择模板'] + aisettings_df['a6'].dropna().tolist()
 
-    # 遍历每个关键词并展示相关内容
+    # 遍历关键词，显示相关内容
     for idx, keyword in enumerate(keywords):
-        # 生成编号标签
         label = generate_label(depth, idx)
-
-        # 设置容器样式，使用不同的背景颜色
         container_style = f"""
             <div style="
                 background-color: {background_color};
@@ -146,81 +141,61 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
         """
         st.markdown(container_style, unsafe_allow_html=True)
 
-        # 显示编号和关键词
         st.markdown(f"**{label} {keyword}**")
-
-        # 显示链接
         if generate_links:
             encoded_keyword = urllib.parse.quote(keyword)
             google_search = f"https://www.google.com/search?q={encoded_keyword}"
-            youtube_search = f"https://www.youtube.com/results?search_query={encoded_keyword}"
-            bilibili_search = f"https://search.bilibili.com/all?keyword={encoded_keyword}"
-            st.markdown(
-                f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})"
-            )
+            st.markdown(f"[Google]({google_search})")
 
         # 更新路径
         current_path = path + [idx]
         path_str = "_".join(map(str, current_path))
 
-        # 下拉菜单
-        select_a7_key = f"a7_template_select_{round_idx}_{path_str}"
-        selected_a7_option = st.selectbox(
-            "选择命令", a7_options, key=select_a7_key
-        )
+        # 下拉菜单，唯一键基于路径
+        select_a7_key = f"a7_{path_str}"
+        select_fixed_prompt_key = f"fixed_{path_str}"
 
-        select_fixed_prompt_key = f"fixed_prompt_select_{round_idx}_{path_str}"
-        selected_fixed_prompt = st.selectbox(
-            "选择模板", fixed_prompt_options_a6, key=select_fixed_prompt_key
-        )
+        selected_a7_option = st.selectbox("选择命令", a7_options, key=select_a7_key)
+        selected_fixed_prompt = st.selectbox("选择模板", fixed_prompt_options_a6, key=select_fixed_prompt_key)
 
-        # 定义用于存储生成内容的状态键
-        content_key = f"content_{round_idx}_{path_str}"
-        article_key = f"article_{round_idx}_{path_str}"
+        content_key = f"content_{path_str}"
+        article_key = f"article_{path_str}"
 
-        # 显示之前生成的关键词（如果有）
+        # 如果有生成的关键词内容，递归展示
         if st.session_state.get(content_key):
             st.markdown("**生成的关键词：**")
             display_analysis_keywords(
                 st.session_state[content_key], selected_language, selected_text_model,
-                round_idx, generate_links, depth=depth+1, path=current_path
+                round_idx, generate_links, depth + 1, current_path
             )
 
-        # 显示之前生成的文章（如果有）
+        # 如果有生成的文章内容，展示文章
         if st.session_state.get(article_key):
             st.markdown("**生成的内容：**")
             st.write(st.session_state[article_key])
 
-        # 检查模板选择并生成新的关键词
-        if selected_fixed_prompt != '请选择模板' and depth < MAX_DEPTH:
-            # 使用唯一的状态键保存是否已生成内容，避免重复生成
-            generated_key = f"generated_{select_fixed_prompt_key}"
-            if not st.session_state.get(generated_key, False):
-                with st.spinner(f"根据模板 '{selected_fixed_prompt}' 生成关键词..."):
-                    new_keywords = generate_keywords_and_links(
-                        keyword, selected_language, selected_text_model, selected_fixed_prompt
-                    )
-                    if new_keywords:
-                        st.session_state[generated_key] = True  # 标记为已生成
-                        st.session_state[content_key] = new_keywords  # 保存生成的关键词
-                        st.experimental_rerun()  # 重新运行以显示新内容
+        # 如果选择了模板，生成关键词
+        if selected_fixed_prompt != '请选择模板' and not st.session_state.get(content_key):
+            with st.spinner(f"根据模板 '{selected_fixed_prompt}' 生成关键词..."):
+                new_keywords = generate_keywords_and_links(
+                    keyword, selected_language, selected_text_model, selected_fixed_prompt
+                )
+                if new_keywords:
+                    st.session_state[content_key] = new_keywords
+                    st.experimental_rerun()
 
-        # 检查命令选择并生成文章
-        if selected_a7_option != '请选择命令':
-            # 使用唯一的状态键保存是否已生成内容，避免重复生成
-            generated_key = f"generated_{select_a7_key}"
-            if not st.session_state.get(generated_key, False):
-                with st.spinner(f"根据命令 '{selected_a7_option}' 生成内容..."):
-                    article = generate_article(
-                        keyword, selected_a7_option, selected_language, selected_text_model
-                    )
-                    if article:
-                        st.session_state[generated_key] = True  # 标记为已生成
-                        st.session_state[article_key] = article  # 保存生成的文章
-                        st.experimental_rerun()  # 重新运行以显示新内容
+        # 如果选择了命令，生成文章
+        if selected_a7_option != '请选择命令' and not st.session_state.get(article_key):
+            with st.spinner(f"根据命令 '{selected_a7_option}' 生成内容..."):
+                article = generate_article(
+                    keyword, selected_a7_option, selected_language, selected_text_model
+                )
+                if article:
+                    st.session_state[article_key] = article
+                    st.experimental_rerun()
 
-        # 关闭容器样式
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 def generate_article(keyword, command, language, model):
     prompt = f"关键词: {keyword}\n命令: {command}\n语言: {language}"
