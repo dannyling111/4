@@ -242,41 +242,43 @@ def analysis_generation_page():
     if 'analysis_rounds' not in st.session_state:
         st.session_state.analysis_rounds = []
 
-    # 输入框
+    # 输入框 - 更新 session_state 中的主题
     input_text_prompt_analysis = st.text_input(
         "请输入文本生成提示词", value=st.session_state.input_text_prompt_analysis
     )
+    st.session_state.input_text_prompt_analysis = input_text_prompt_analysis
 
     # 语言和文本模型选择
     selected_language = st.selectbox("选择语言", language_options)
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
 
-    # 命令选择 Dropdown
+    # 命令选择 - 更新 session_state 中的指令
     a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
-    st.session_state.selected_command = st.selectbox(
-        "选择命令", a7_options, index=0  # 默认显示为“请选择命令”
+    selected_command = st.selectbox(
+        "选择命令", a7_options, index=0
     )
+    st.session_state.selected_command = selected_command
 
-    # 关键词生成模板 Dropdown
+    # 关键词生成模板选择
     fixed_prompt_options_a6 = ['请选择模板'] + aisettings_df['a6'].dropna().tolist()
-    st.session_state.selected_template = st.selectbox(
+    selected_template = st.selectbox(
         "选择关键词生成模板", fixed_prompt_options_a6, index=0
     )
+    st.session_state.selected_template = selected_template
 
-    # 是否生成关键词相关链接的 Checkbox
+    # 是否生成关键词相关链接
     generate_links = st.checkbox("是否生成关键词相关的搜索链接", value=True)
 
     # 按钮：生成内容
     if st.button("生成内容"):
         content_generated = False  # 标记是否有内容生成
 
-        # 如果选择了命令，则生成文章内容
-        if (st.session_state.selected_command and 
-            st.session_state.selected_command != '请选择命令'):
-            with st.spinner(f"正在生成关于命令 '{st.session_state.selected_command}' 的内容..."):
+        # 生成文章内容
+        if (selected_command and selected_command != '请选择命令'):
+            with st.spinner(f"正在生成关于 '{selected_command}' 的内容..."):
                 article = generate_article(
                     input_text_prompt_analysis,
-                    st.session_state.selected_command,
+                    selected_command,
                     selected_language,
                     selected_text_model
                 )
@@ -288,15 +290,14 @@ def analysis_generation_page():
                     st.success("命令内容生成成功！")
                     content_generated = True
 
-        # 如果选择了模板，则生成关键词内容
-        if (st.session_state.selected_template and 
-            st.session_state.selected_template != '请选择模板'):
-            with st.spinner(f"根据模板 '{st.session_state.selected_template}' 生成关键词..."):
+        # 根据模板生成关键词内容
+        if (selected_template and selected_template != '请选择模板'):
+            with st.spinner(f"根据模板 '{selected_template}' 生成关键词..."):
                 new_keywords = generate_keywords_and_links(
                     input_text_prompt_analysis,
                     selected_language,
                     selected_text_model,
-                    st.session_state.selected_template
+                    selected_template
                 )
                 if new_keywords:
                     st.session_state.analysis_rounds.append({
@@ -307,11 +308,10 @@ def analysis_generation_page():
                     st.success("关键词内容生成成功！")
                     content_generated = True
 
-        # 如果没有生成任何内容，显示警告
         if not content_generated:
             st.warning("请确保至少选择一个命令或模板。")
 
-    # 按钮：清除结果
+    # 清除结果按钮
     if st.button("清除结果"):
         st.session_state.analysis_rounds = []
         st.session_state.input_text_prompt_analysis = ''
@@ -325,16 +325,17 @@ def analysis_generation_page():
             st.subheader(f"分析文章：第 {round_idx + 1} 轮")
             st.write(round_data['content'])
         elif round_data['type'] == 'keywords':
-            st.subheader(f"第 {round_idx + 1} 轮生成的关键词")
+            # 展示每轮生成的关键词，并传递 prompt 信息
             display_analysis_keywords(
-                round_data['content'], 
-                selected_language, 
+                round_data['content'],
+                selected_language,
                 selected_text_model,
-                round_idx, 
+                round_idx,
                 round_data['generate_links'],
-                st.session_state.selected_command,  # 传入指令
-                input_text_prompt_analysis  # 传入主题内容
+                st.session_state.selected_command,  # 确保指令已传入
+                st.session_state.input_text_prompt_analysis  # 确保主题已传入
             )
+
 
 
 
