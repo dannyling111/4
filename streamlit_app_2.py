@@ -99,36 +99,40 @@ def generate_keywords_and_links(input_text, language, model, fixed_prompt_append
             return []
 
 def generate_label(depth, idx):
-    label_parts = ['1'] * (depth - 1) + [str(idx + 1)]
+    label_parts = [str(idx + 1) if depth == 1 else '1'] * depth
     label = '.'.join(label_parts)
     return label
 
+
 def display_analysis_keywords(keywords, selected_language, selected_text_model, round_idx, generate_links, depth=1, path=None):
     """
-    展示生成的关键词，并动态生成相关内容、链接和下拉菜单。
+    Display generated keywords and dynamically create content, links, and dropdown menus.
 
-    参数：
-    - keywords: 要展示的关键词列表
-    - selected_language: 选择的语言
-    - selected_text_model: 选择的文本生成模型
-    - round_idx: 当前轮次的索引
-    - generate_links: 是否生成关键词的链接
-    - depth: 递归深度，默认值为1，用于生成编号
-    - path: 用于生成唯一键的路径
+    Parameters:
+    - keywords: List of keywords to display
+    - selected_language: Selected language
+    - selected_text_model: Selected text generation model
+    - round_idx: Index of the current round
+    - generate_links: Whether to generate links for the keywords
+    - depth: Recursion depth, default is 1
+    - path: Path used to generate unique keys
     """
-    MAX_DEPTH = 3  # 限制递归深度
+    MAX_DEPTH = 3  # Limit recursion depth
+    if depth > MAX_DEPTH:
+        return  # Stop recursion if maximum depth is exceeded
+
     if path is None:
         path = []
 
-    # 定义颜色方案，每轮有不同颜色
+    # Define color scheme; each round has a different color
     round_colors = ['#e6f7ff', '#fff1f0', '#f6ffed', '#fff7e6', '#f9f0ff']
     background_color = round_colors[round_idx % len(round_colors)]
 
-    # 获取命令和模板选项
+    # Get command and template options
     a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
     fixed_prompt_options_a6 = ['请选择模板'] + aisettings_df['a6'].dropna().tolist()
 
-    # 遍历关键词，显示相关内容
+    # Iterate over keywords and display content
     for idx, keyword in enumerate(keywords):
         label = generate_label(depth, idx)
         container_style = f"""
@@ -145,13 +149,17 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
         if generate_links:
             encoded_keyword = urllib.parse.quote(keyword)
             google_search = f"https://www.google.com/search?q={encoded_keyword}"
-            st.markdown(f"[Google]({google_search})")
+            youtube_search = f"https://www.youtube.com/results?search_query={encoded_keyword}"
+            bilibili_search = f"https://search.bilibili.com/all?keyword={encoded_keyword}"
+            st.markdown(
+                f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})"
+            )
 
-        # 更新路径
+        # Update path
         current_path = path + [idx]
         path_str = "_".join(map(str, current_path))
 
-        # 下拉菜单，唯一键基于路径
+        # Dropdown menus with unique keys based on the path
         select_a7_key = f"a7_{path_str}"
         select_fixed_prompt_key = f"fixed_{path_str}"
 
@@ -161,7 +169,7 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
         content_key = f"content_{path_str}"
         article_key = f"article_{path_str}"
 
-        # 如果有生成的关键词内容，递归展示
+        # Check if content has already been generated
         if st.session_state.get(content_key):
             st.markdown("**生成的关键词：**")
             display_analysis_keywords(
@@ -169,32 +177,32 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                 round_idx, generate_links, depth + 1, current_path
             )
 
-        # 如果有生成的文章内容，展示文章
         if st.session_state.get(article_key):
             st.markdown("**生成的内容：**")
             st.write(st.session_state[article_key])
 
-        # 如果选择了模板，生成关键词
-        if selected_fixed_prompt != '请选择模板' and not st.session_state.get(content_key):
+        # Generate new keywords if a template is selected and content not already generated
+        if selected_fixed_prompt != '请选择模板' and content_key not in st.session_state:
             with st.spinner(f"根据模板 '{selected_fixed_prompt}' 生成关键词..."):
                 new_keywords = generate_keywords_and_links(
                     keyword, selected_language, selected_text_model, selected_fixed_prompt
                 )
                 if new_keywords:
                     st.session_state[content_key] = new_keywords
-                    st.experimental_rerun()
+                    # No need to rerun; Streamlit will automatically rerun after the interaction
 
-        # 如果选择了命令，生成文章
-        if selected_a7_option != '请选择命令' and not st.session_state.get(article_key):
+        # Generate article if a command is selected and article not already generated
+        if selected_a7_option != '请选择命令' and article_key not in st.session_state:
             with st.spinner(f"根据命令 '{selected_a7_option}' 生成内容..."):
                 article = generate_article(
                     keyword, selected_a7_option, selected_language, selected_text_model
                 )
                 if article:
                     st.session_state[article_key] = article
-                    st.experimental_rerun()
+                    # No need to rerun; Streamlit will automatically rerun after the interaction
 
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 def generate_article(keyword, command, language, model):
