@@ -229,7 +229,6 @@ def wordcloud_generation_page():
                 google_news_link = f"https://news.google.com/search?q={encoded_keyword}"
                 youtube_link = f"https://www.youtube.com/results?search_query={encoded_keyword}"
                 st.markdown(f"- {keyword}: [Google Search]({google_search_link}) | [Google News]({google_news_link}) | [YouTube]({youtube_link})")
-
 def analysis_generation_page():
     st.header("主题分析生成")
 
@@ -270,6 +269,7 @@ def analysis_generation_page():
     # 按钮：生成内容
     if st.button("生成内容"):
         content_generated = False  # 标记是否有内容生成
+        round_data = {}
 
         # 如果选择了命令，则生成文章内容
         if (st.session_state.selected_command and 
@@ -282,11 +282,7 @@ def analysis_generation_page():
                     selected_text_model
                 )
                 if article:
-                    st.session_state.analysis_rounds.append({
-                        'type': 'article',
-                        'content': article
-                    })
-                    st.success("命令内容生成成功！")
+                    round_data['article'] = article
                     content_generated = True
 
         # 如果选择了模板，则生成关键词内容
@@ -300,19 +296,18 @@ def analysis_generation_page():
                     st.session_state.selected_template
                 )
                 if new_keywords:
-                    st.session_state.analysis_rounds.append({
-                        'type': 'keywords',
-                        'content': new_keywords,
-                        'generate_links': generate_links  # 记录链接生成设置
-                    })
-                    st.success("关键词内容生成成功！")
+                    round_data['keywords'] = new_keywords
+                    round_data['generate_links'] = generate_links  # 记录链接生成设置
                     content_generated = True
 
-        # 如果没有生成任何内容，显示警告
-        if not content_generated:
+        # 保存生成的内容到分析轮次
+        if content_generated:
+            st.session_state.analysis_rounds.append(round_data)
+            st.success("内容生成成功！")
+        else:
             st.warning("请确保至少选择一个命令或模板。")
 
-    # 按钮：清除结果
+    # 清除结果的按钮
     if st.button("清除结果"):
         st.session_state.analysis_rounds = []
         st.session_state.input_text_prompt_analysis = ''
@@ -320,18 +315,20 @@ def analysis_generation_page():
         st.session_state.selected_template = None
         st.success("所有结果已清除！")
 
-    # 展示生成的内容和关键词
+    # 展示生成的关键词和文章内容
     for round_idx, round_data in enumerate(st.session_state.analysis_rounds):
-        if round_data['type'] == 'article':
-            st.subheader(f"分析文章：第 {round_idx + 1} 轮")
-            st.write(round_data['content'])
-        elif round_data['type'] == 'keywords':
+        # 如果有关键词内容，优先展示关键词和链接
+        if 'keywords' in round_data:
             st.subheader(f"第 {round_idx + 1} 轮生成的关键词")
             display_analysis_keywords(
-                round_data['content'], selected_language, selected_text_model,
+                round_data['keywords'], selected_language, selected_text_model,
                 round_idx, round_data['generate_links']
             )
 
+        # 如果有文章内容，直接在关键词内容之后展示
+        if 'article' in round_data:
+            st.subheader(f"分析文章：第 {round_idx + 1} 轮")
+            st.write(round_data['article'])
 
 
 
