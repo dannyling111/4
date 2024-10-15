@@ -148,14 +148,29 @@ def display_analysis_keywords(
         st.selectbox("选择模板", fixed_prompt_options_a6, key=select_fixed_prompt_key, on_change=handle_selection,
                      args=(keyword, "fixed", path_str))
 
+        # 显示已生成的内容
+        content_key = f"content_{path_str}"
+        article_key = f"article_{path_str}"
+
+        if content_key in st.session_state:
+            st.markdown("**生成的关键词：**")
+            display_analysis_keywords(
+                st.session_state[content_key], selected_language, selected_text_model,
+                round_idx, generate_links, depth + 1, current_path
+            )
+
+        if article_key in st.session_state:
+            st.markdown("**生成的内容：**")
+            st.write(st.session_state[article_key])
+
         st.markdown("</div>", unsafe_allow_html=True)
 
 
 def handle_selection(keyword, option_type, path_str):
     """根据用户的选择处理逻辑。"""
     # 从 session_state 中提取语言和模型，确保变量存在
-    selected_language = st.session_state.get("selected_language", "")
-    selected_text_model = st.session_state.get("selected_text_model", "")
+    selected_language = st.session_state['selected_language']
+    selected_text_model = st.session_state['selected_text_model']
 
     content_key = f"content_{path_str}"
     article_key = f"article_{path_str}"
@@ -179,8 +194,6 @@ def handle_selection(keyword, option_type, path_str):
                 )
                 if new_keywords:
                     st.session_state[content_key] = new_keywords
-
-
 
 
 
@@ -224,23 +237,23 @@ def analysis_generation_page():
 
     # 初始化 session_state 中的变量
     if 'input_text_prompt_analysis' not in st.session_state:
-        st.session_state.input_text_prompt_analysis = ''
+        st.session_state['input_text_prompt_analysis'] = ''
     if 'selected_language' not in st.session_state:
-        st.session_state.selected_language = language_options[0]  # 默认语言
+        st.session_state['selected_language'] = language_options[0]  # 默认语言
     if 'selected_text_model' not in st.session_state:
-        st.session_state.selected_text_model = text_bots[0]  # 默认模型
+        st.session_state['selected_text_model'] = text_bots[0]  # 默认模型
 
     # 输入框
-    st.session_state.input_text_prompt_analysis = st.text_input(
-        "请输入文本生成提示词", value=st.session_state.input_text_prompt_analysis
+    st.text_input(
+        "请输入文本生成提示词", key='input_text_prompt_analysis'
     )
 
     # 下拉选择语言和模型
-    st.session_state.selected_language = st.selectbox(
-        "选择语言", language_options, key="selected_language"
+    st.selectbox(
+        "选择语言", language_options, key='selected_language'
     )
-    st.session_state.selected_text_model = st.selectbox(
-        "选择文本生成模型", text_bots, key="selected_text_model"
+    st.selectbox(
+        "选择文本生成模型", text_bots, key='selected_text_model'
     )
 
     generate_links = st.checkbox("是否生成关键词相关的搜索链接", value=True)
@@ -250,9 +263,13 @@ def analysis_generation_page():
         if 'keywords' in round_data:
             st.subheader(f"第 {round_idx + 1} 轮生成的关键词")
             display_analysis_keywords(
-                round_data['keywords'], st.session_state.selected_language,
-                st.session_state.selected_text_model, round_idx, generate_links
+                round_data['keywords'],
+                st.session_state['selected_language'],
+                st.session_state['selected_text_model'],
+                round_idx,
+                generate_links
             )
+
 
 
 # Page Block: Excel File Reading and Editing
