@@ -20,6 +20,7 @@ from io import BytesIO
 import matplotlib.pyplot as plt
 import openpyxl
 import urllib.parse
+import uuid  # 新增
 
 # Configure Matplotlib to use 'Agg' backend for Streamlit compatibility
 plt.switch_backend('Agg')
@@ -98,7 +99,12 @@ def generate_keywords_and_links(input_text, language, model, fixed_prompt_append
             st.error(f"Error processing keywords: {str(e)}")
             return []
 
-def display_analysis_keywords(keywords, selected_language, selected_text_model, round_idx, generate_links, depth=0):
+def generate_label(depth, idx):
+    label_parts = ['1'] * depth + [str(idx + 1)]
+    label = '.'.join(label_parts)
+    return label
+
+def display_analysis_keywords(keywords, selected_language, selected_text_model, round_idx, generate_links, depth=1):
     """
     展示生成的关键词，并动态生成相关内容、链接和下拉菜单。
 
@@ -108,13 +114,14 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
     - selected_text_model: 选择的文本生成模型
     - round_idx: 当前轮次的索引
     - generate_links: 是否生成关键词的链接
-    - depth: 递归深度，默认值为0，用于限制递归层数，避免无限递归
+    - depth: 递归深度，默认值为1，用于生成编号
     """
     # 设置递归深度的最大值，避免无限递归
     MAX_DEPTH = 3  # 您可以根据需要调整最大深度
 
-    # 定义一组颜色，用于不同的关键词
-    colors = ['#f0f0f0', '#e6f7ff', '#fff7e6', '#f6ffed', '#f9f0ff', '#fff1f0', '#f0f5ff']
+    # 定义每轮的颜色
+    round_colors = ['#e6f7ff', '#fff1f0', '#f6ffed', '#fff7e6', '#f9f0ff']
+    background_color = round_colors[round_idx % len(round_colors)]
 
     # 获取命令和模板选项
     a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
@@ -122,8 +129,8 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
 
     # 遍历每个关键词并展示相关内容
     for idx, keyword in enumerate(keywords):
-        # 使用关键词索引来选择颜色，确保每个关键词的容器颜色不同
-        background_color = colors[idx % len(colors)]
+        # 生成编号标签
+        label = generate_label(depth, idx)
 
         # 设置容器样式，使用不同的背景颜色
         container_style = f"""
@@ -136,38 +143,29 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
         """
         st.markdown(container_style, unsafe_allow_html=True)
 
-        # 使用列布局展示关键词、链接和下拉菜单
-        col1, col2 = st.columns([3, 2])
+        # 显示编号和关键词
+        st.markdown(f"**{label} {keyword}**")
 
-        # 第一列：显示关键词和链接
-        with col1:
-            st.markdown(f"**{keyword}**")
-
-            # 如果启用了链接生成，展示对应的搜索链接
-            if generate_links:
-                encoded_keyword = urllib.parse.quote(keyword)
-                google_search = f"https://www.google.com/search?q={encoded_keyword}"
-                youtube_search = f"https://www.youtube.com/results?search_query={encoded_keyword}"
-                bilibili_search = f"https://search.bilibili.com/all?keyword={encoded_keyword}"
-                st.markdown(
-                    f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})"
-                )
-
-        # 第二列：显示下拉菜单用于选择命令和模板
-        with col2:
-            # Dropdown 1：选择命令
-            select_a7_key = f"a7_template_select_{round_idx}_{idx}_{depth}"
-            selected_a7_option = st.selectbox(
-                "选择命令", a7_options, key=select_a7_key
+        # 显示链接
+        if generate_links:
+            encoded_keyword = urllib.parse.quote(keyword)
+            google_search = f"https://www.google.com/search?q={encoded_keyword}"
+            youtube_search = f"https://www.youtube.com/results?search_query={encoded_keyword}"
+            bilibili_search = f"https://search.bilibili.com/all?keyword={encoded_keyword}"
+            st.markdown(
+                f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})"
             )
 
-            # Dropdown 2：选择模板
-            select_fixed_prompt_key = f"fixed_prompt_select_{round_idx}_{idx}_{depth}"
-            selected_fixed_prompt = st.selectbox(
-                "选择模板", fixed_prompt_options_a6, key=select_fixed_prompt_key
-            )
+        # 下拉菜单
+        select_a7_key = f"a7_template_select_{round_idx}_{idx}_{depth}_{uuid.uuid4()}"
+        selected_a7_option = st.selectbox(
+            "选择命令", a7_options, key=select_a7_key
+        )
 
-        # **将生成内容的代码块移出列布局**
+        select_fixed_prompt_key = f"fixed_prompt_select_{round_idx}_{idx}_{depth}_{uuid.uuid4()}"
+        selected_fixed_prompt = st.selectbox(
+            "选择模板", fixed_prompt_options_a6, key=select_fixed_prompt_key
+        )
 
         # 定义用于存储生成内容的状态键
         content_key = f"content_{select_fixed_prompt_key}"
