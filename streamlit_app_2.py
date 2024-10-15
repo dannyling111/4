@@ -102,10 +102,11 @@ def generate_keywords_and_links(input_text, language, model, fixed_prompt_append
             st.error(f"Error processing keywords: {str(e)}")
             return []
 
-def generate_label(depth, idx):
+def generate_label(path, idx):
     """根据层级和索引生成编号标签，例如：1, 1.1, 1.1.1"""
     parts = [str(i) for i in path + [idx + 1]]
     return ".".join(parts)
+
 
 def display_analysis_keywords(
     keywords, selected_language, selected_text_model, round_idx, generate_links, depth=1, path=None
@@ -126,7 +127,7 @@ def display_analysis_keywords(
 
     # 遍历关键词并展示内容
     for idx, keyword in enumerate(keywords):
-        label = generate_label(depth, idx)
+        label = generate_label(path, idx)
 
         # 定义容器样式
         container_style = f"""
