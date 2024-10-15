@@ -122,7 +122,6 @@ def display_analysis_keywords(
     round_colors = ['#e6f7ff', '#fff1f0', '#f6ffed', '#fff7e6', '#f9f0ff']
     background_color = round_colors[round_idx % len(round_colors)]
 
-    # 遍历关键词并展示内容
     for idx, keyword in enumerate(keywords):
         label = generate_label(path, idx)
 
@@ -139,7 +138,6 @@ def display_analysis_keywords(
 
         st.markdown(f"**{label} {keyword}**")
 
-        # 展示链接
         if generate_links:
             encoded_keyword = urllib.parse.quote(keyword)
             st.markdown(
@@ -147,22 +145,18 @@ def display_analysis_keywords(
                 f"[YouTube](https://www.youtube.com/results?search_query={encoded_keyword})"
             )
 
-        # 更新路径并生成唯一键
         current_path = path + [idx]
         path_str = "_".join(map(str, current_path))
 
-        # 创建 Dropdown 并确保键唯一
         select_a7_key = f"a7_{path_str}"
         select_fixed_prompt_key = f"fixed_{path_str}"
 
         selected_a7_option = st.selectbox("选择命令", a7_options, key=select_a7_key)
         selected_fixed_prompt = st.selectbox("选择模板", fixed_prompt_options_a6, key=select_fixed_prompt_key)
 
-        # 定义状态键
         content_key = f"content_{path_str}"
         article_key = f"article_{path_str}"
 
-        # 显示已生成的关键词
         if content_key in st.session_state:
             st.markdown("**生成的关键词：**")
             display_analysis_keywords(
@@ -170,36 +164,31 @@ def display_analysis_keywords(
                 round_idx, generate_links, depth + 1, current_path
             )
 
-        # 显示文章内容
         if article_key in st.session_state:
             st.markdown("**生成的内容：**")
             st.write(st.session_state[article_key])
 
-        # 生成新关键词逻辑
         if selected_fixed_prompt != '请选择模板' and content_key not in st.session_state:
-            with st.spinner(f"根据模板 '{selected_fixed_prompt}' 生成关键词..."):
-                new_keywords = generate_keywords_and_links(
-                    keyword, selected_language, selected_text_model, selected_fixed_prompt
-                )
-                if new_keywords:
-                    st.session_state[content_key] = new_keywords
-                    # 仅在生成新内容时重绘
-                    st.experimental_rerun()
+            if st.button(f"生成关键词（模板：{selected_fixed_prompt}）", key=f"generate_{path_str}"):
+                with st.spinner(f"根据模板 '{selected_fixed_prompt}' 生成关键词..."):
+                    new_keywords = generate_keywords_and_links(
+                        keyword, selected_language, selected_text_model, selected_fixed_prompt
+                    )
+                    if new_keywords:
+                        st.session_state[content_key] = new_keywords
+                        st.experimental_rerun()  # 仅在成功生成内容时重绘
 
-        # 生成文章逻辑
         if selected_a7_option != '请选择命令' and article_key not in st.session_state:
-            with st.spinner(f"根据命令 '{selected_a7_option}' 生成内容..."):
-                article = generate_article(
-                    keyword, selected_a7_option, selected_language, selected_text_model
-                )
-                if article:
-                    st.session_state[article_key] = article
-                    # 仅在生成新内容时重绘
-                    st.experimental_rerun()
+            if st.button(f"生成文章（命令：{selected_a7_option}）", key=f"generate_article_{path_str}"):
+                with st.spinner(f"根据命令 '{selected_a7_option}' 生成内容..."):
+                    article = generate_article(
+                        keyword, selected_a7_option, selected_language, selected_text_model
+                    )
+                    if article:
+                        st.session_state[article_key] = article
+                        st.experimental_rerun()  # 仅在成功生成内容时重绘
 
         st.markdown("</div>", unsafe_allow_html=True)
-
-
 
 
 
