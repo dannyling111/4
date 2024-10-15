@@ -154,7 +154,7 @@ def display_analysis_keywords(
         current_path = path + [idx]
         path_str = "_".join(map(str, current_path))
 
-        # 创建下拉菜单，确保唯一键
+        # 创建 Dropdown 并确保键唯一
         select_a7_key = f"a7_{path_str}"
         select_fixed_prompt_key = f"fixed_{path_str}"
 
@@ -178,7 +178,7 @@ def display_analysis_keywords(
             st.markdown("**生成的内容：**")
             st.write(st.session_state[article_key])
 
-        # 生成新关键词
+        # 生成新关键词并刷新页面
         if selected_fixed_prompt != '请选择模板' and content_key not in st.session_state:
             with st.spinner(f"根据模板 '{selected_fixed_prompt}' 生成关键词..."):
                 new_keywords = generate_keywords_and_links(
@@ -186,8 +186,9 @@ def display_analysis_keywords(
                 )
                 if new_keywords:
                     st.session_state[content_key] = new_keywords
+                    st.experimental_rerun()  # 触发页面重绘
 
-        # 生成文章
+        # 生成文章并刷新页面
         if selected_a7_option != '请选择命令' and article_key not in st.session_state:
             with st.spinner(f"根据命令 '{selected_a7_option}' 生成内容..."):
                 article = generate_article(
@@ -195,8 +196,10 @@ def display_analysis_keywords(
                 )
                 if article:
                     st.session_state[article_key] = article
+                    st.experimental_rerun()  # 触发页面重绘
 
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 
