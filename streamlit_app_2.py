@@ -98,10 +98,14 @@ def generate_keywords_and_links(input_text, language, model, fixed_prompt_append
             st.error(f"Error processing keywords: {str(e)}")
             return []
 
-def display_analysis_keywords(keywords, selected_language, selected_text_model, round_idx, generate_links):
+def display_analysis_keywords(keywords, selected_language, selected_text_model, 
+                              round_idx, generate_links, keyword_command, keyword_prompt):
     # 定义每一轮的颜色，用于分隔不同轮次的关键词
     round_colors = ["#AED6F1", "#A9DFBF", "#F5B7B1", "#F9E79F", "#D7BDE2"]
     selected_color = round_colors[round_idx % len(round_colors)]  # 根据轮次循环选择颜色
+
+    # 展示标题，包含该轮的主题内容和指令
+    st.subheader(f"第 {round_idx + 1} 轮 - 主题: {keyword_prompt} | 指令: {keyword_command}")
 
     # 获取命令和模板的选项
     a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
@@ -162,6 +166,7 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
 
         # 关闭容器
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 
