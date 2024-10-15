@@ -199,6 +199,7 @@ def generate_article(keyword, command, language, model):
     prompt = f"关键词: {keyword}\n命令: {command}\n语言: {language}"
     return fetch_text_response(prompt, model)
 
+
 def fetch_text_response(prompt, model):
     async def fetch():
         message = ProtocolMessage(role="user", content=prompt)
@@ -232,51 +233,70 @@ def wordcloud_generation_page():
 def analysis_generation_page():
     st.header("主题分析生成")
 
+    # 初始化 session_state 用于输入框和生成的分析内容
     if 'input_text_prompt_analysis' not in st.session_state:
         st.session_state.input_text_prompt_analysis = ''
+    if 'selected_command' not in st.session_state:
+        st.session_state.selected_command = None  # 初始化命令选择的状态
     if 'analysis_rounds' not in st.session_state:
         st.session_state.analysis_rounds = []
 
+    # 用户输入文本的提示框
     input_text_prompt_analysis = st.text_input(
-        "请输入文本生成提示词", value=st.session_state.input_text_prompt_analysis)
+        "请输入文本生成提示词", value=st.session_state.input_text_prompt_analysis
+    )
 
+    # 语言选择和模型选择
     selected_language = st.selectbox("选择语言", language_options)
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
 
-    fixed_prompt_options_a6 = aisettings_df['a6'].dropna().tolist()
+    # 新增的命令选择 Dropdown（主页上的，不自动执行）
+    a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
+    st.session_state.selected_command = st.selectbox(
+        "选择命令", a7_options, index=0  # 默认显示提示信息
+    )
+
+    # 关键词生成模板选择 Dropdown
+    fixed_prompt_options_a6 = ['请选择模板'] + aisettings_df['a6'].dropna().tolist()
     selected_fixed_prompt_a6 = st.selectbox("选择关键词生成模板", fixed_prompt_options_a6)
 
+    # 关键词搜索链接生成选项
     generate_links = st.checkbox("是否生成关键词相关的搜索链接", value=True)
 
-    if st.button("生成关键词"):
-        if input_text_prompt_analysis.strip():
-            with st.spinner("正在生成关键词..."):
-                new_keywords = generate_keywords_and_links(
-                    input_text_prompt_analysis, selected_language, selected_text_model, selected_fixed_prompt_a6
+    # 按键执行的逻辑
+    if st.button("生成内容"):
+        if input_text_prompt_analysis.strip() and st.session_state.selected_command != '请选择命令':
+            with st.spinner("正在生成内容..."):
+                # 根据用户选择的命令生成内容
+                article = generate_article(
+                    input_text_prompt_analysis,
+                    st.session_state.selected_command,
+                    selected_language,
+                    selected_text_model
                 )
-                if new_keywords:
+                if article:
                     st.session_state.analysis_rounds.append({
-                        'type': 'keywords',
-                        'content': new_keywords,
-                        'generate_links': generate_links  # Ensure correct setting
+                        'type': 'article',
+                        'content': article
                     })
+                    st.success("内容生成成功！")
         else:
-            st.warning("请输入文本生成提示词！")
+            st.warning("请确保输入提示词并选择命令。")
 
+    # 清除结果的按键
     if st.button("清除结果"):
         st.session_state.analysis_rounds = []
         st.session_state.input_text_prompt_analysis = ''
+        st.session_state.selected_command = None  # 重置命令选择
         st.success("所有结果已清除！")
 
+    # 展示生成的内容或关键词
     for round_idx, round_data in enumerate(st.session_state.analysis_rounds):
-        if round_data['type'] == 'keywords':
-            st.subheader(f"第 {round_idx + 1} 轮生成的主题关键词")
-            display_analysis_keywords(
-                round_data['content'], selected_language, selected_text_model, round_idx, round_data['generate_links']
-            )
-        elif round_data['type'] == 'article':
+        if round_data['type'] == 'article':
             st.subheader(f"分析文章：第 {round_idx + 1} 轮")
             st.write(round_data['content'])
+
+
 
 # Page Block: Excel File Reading and Editing
 def excel_page():
