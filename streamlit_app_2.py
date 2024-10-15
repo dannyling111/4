@@ -99,27 +99,30 @@ def generate_keywords_and_links(input_text, language, model, fixed_prompt_append
             return []
 
 def display_analysis_keywords(keywords, selected_language, selected_text_model, round_idx, generate_links):
-    # Get options from a7 and a6 columns
+    # 定义每一轮的颜色，用于分隔不同轮次的关键词
+    round_colors = ["#AED6F1", "#A9DFBF", "#F5B7B1", "#F9E79F", "#D7BDE2"]
+    selected_color = round_colors[round_idx % len(round_colors)]  # 根据轮次循环选择颜色
+
+    # 获取命令和模板的选项
     a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
     fixed_prompt_options_a6 = ['请选择模板'] + aisettings_df['a6'].dropna().tolist()
 
-    # Loop through keywords and create sections with consistent gray borders
     for idx, keyword in enumerate(keywords):
-        # Define a consistent gray background color and border
+        # 使用动态颜色设置背景和边框样式
         container_style = f"""
             <div style="
-                background-color: #f0f0f0;
+                background-color: {selected_color};
                 padding: 10px;
                 margin-bottom: 10px;
                 border-radius: 8px;
                 border: 1px solid #d0d0d0;">
         """
 
-        # Render the styled container
+        # 渲染样式容器
         st.markdown(container_style, unsafe_allow_html=True)
 
-        # Use Streamlit columns inside the styled container
-        col1, col2 = st.columns([3, 2])  # Two columns: keyword | dropdowns
+        # 使用 Streamlit 的列布局展示关键词和选项
+        col1, col2 = st.columns([3, 2])  # 两列布局：关键词 | 下拉菜单
 
         with col1:
             st.markdown(f"**{keyword}**")
@@ -131,43 +134,34 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                 st.markdown(f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})")
 
         with col2:
-            # Dropdown 1: Command selection
+            # 命令选择下拉菜单
             select_a7_key = f"a7_template_select_{round_idx}_{idx}"
-            selected_a7_option = st.selectbox(
-                "选择命令", a7_options, key=select_a7_key
-            )
+            selected_a7_option = st.selectbox("选择命令", a7_options, key=select_a7_key)
 
-            # Initialize previous selection
             prev_select_a7_key = f"prev_{select_a7_key}"
             if prev_select_a7_key not in st.session_state:
                 st.session_state[prev_select_a7_key] = a7_options[0]
 
-            # Check if selection changed
             if selected_a7_option != st.session_state[prev_select_a7_key]:
                 st.session_state[prev_select_a7_key] = selected_a7_option
                 if selected_a7_option != '请选择命令':
                     handle_selection(keyword, selected_a7_option, '请选择模板', selected_language, selected_text_model, generate_links)
 
-            # Dropdown 2: Template selection
+            # 模板选择下拉菜单
             select_fixed_prompt_key = f"fixed_prompt_select_{round_idx}_{idx}"
-            selected_fixed_prompt = st.selectbox(
-                "选择模板", fixed_prompt_options_a6, key=select_fixed_prompt_key
-            )
+            selected_fixed_prompt = st.selectbox("选择模板", fixed_prompt_options_a6, key=select_fixed_prompt_key)
 
-            # Initialize previous selection
             prev_select_fixed_prompt_key = f"prev_{select_fixed_prompt_key}"
             if prev_select_fixed_prompt_key not in st.session_state:
                 st.session_state[prev_select_fixed_prompt_key] = fixed_prompt_options_a6[0]
 
-            # Check if selection changed
             if selected_fixed_prompt != st.session_state[prev_select_fixed_prompt_key]:
                 st.session_state[prev_select_fixed_prompt_key] = selected_fixed_prompt
                 if selected_fixed_prompt != '请选择模板':
                     handle_selection(keyword, '请选择命令', selected_fixed_prompt, selected_language, selected_text_model, generate_links)
 
-        # Close the container
+        # 关闭容器
         st.markdown("</div>", unsafe_allow_html=True)
-
 
 
 
