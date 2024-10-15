@@ -104,8 +104,8 @@ def generate_keywords_and_links(input_text, language, model, fixed_prompt_append
 
 def generate_label(depth, idx):
     """根据层级和索引生成编号标签，例如：1, 1.1, 1.1.1"""
-    label_parts = [str(idx + 1) if depth == 1 else f"{depth}.{idx + 1}"]
-    return '.'.join(label_parts)
+    parts = [str(i) for i in path + [idx + 1]]
+    return ".".join(parts)
 
 def display_analysis_keywords(
     keywords, selected_language, selected_text_model, round_idx, generate_links, depth=1, path=None
@@ -114,6 +114,9 @@ def display_analysis_keywords(
     展示生成的关键词，并动态创建相关内容、链接和下拉菜单。
     """
     MAX_DEPTH = 3  # 限制递归层级
+    if depth > MAX_DEPTH:
+        return  # 超出最大层级时停止递归
+
     if path is None:
         path = []
 
@@ -121,9 +124,8 @@ def display_analysis_keywords(
     round_colors = ['#e6f7ff', '#fff1f0', '#f6ffed', '#fff7e6', '#f9f0ff']
     background_color = round_colors[round_idx % len(round_colors)]
 
-    # 遍历每个关键词并展示内容
+    # 遍历关键词并展示内容
     for idx, keyword in enumerate(keywords):
-        # 生成编号标签
         label = generate_label(depth, idx)
 
         # 定义容器样式
@@ -137,35 +139,32 @@ def display_analysis_keywords(
         """
         st.markdown(container_style, unsafe_allow_html=True)
 
-        # 显示编号和关键词
         st.markdown(f"**{label} {keyword}**")
 
-        # 展示搜索链接
+        # 展示链接
         if generate_links:
             encoded_keyword = urllib.parse.quote(keyword)
-            google_search = f"https://www.google.com/search?q={encoded_keyword}"
-            youtube_search = f"https://www.youtube.com/results?search_query={encoded_keyword}"
-            bilibili_search = f"https://search.bilibili.com/all?keyword={encoded_keyword}"
             st.markdown(
-                f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})"
+                f"[Google](https://www.google.com/search?q={encoded_keyword}) | "
+                f"[YouTube](https://www.youtube.com/results?search_query={encoded_keyword})"
             )
 
         # 更新路径并生成唯一键
         current_path = path + [idx]
         path_str = "_".join(map(str, current_path))
 
-        # 创建下拉菜单并确保键唯一
+        # 创建下拉菜单，确保唯一键
         select_a7_key = f"a7_{path_str}"
         select_fixed_prompt_key = f"fixed_{path_str}"
 
         selected_a7_option = st.selectbox("选择命令", a7_options, key=select_a7_key)
         selected_fixed_prompt = st.selectbox("选择模板", fixed_prompt_options_a6, key=select_fixed_prompt_key)
 
-        # 定义存储内容的状态键
+        # 定义状态键
         content_key = f"content_{path_str}"
         article_key = f"article_{path_str}"
 
-        # 检查并显示已生成的关键词
+        # 显示生成的关键词
         if content_key in st.session_state:
             st.markdown("**生成的关键词：**")
             display_analysis_keywords(
@@ -173,12 +172,12 @@ def display_analysis_keywords(
                 round_idx, generate_links, depth + 1, current_path
             )
 
-        # 检查并显示已生成的文章
+        # 显示文章
         if article_key in st.session_state:
             st.markdown("**生成的内容：**")
             st.write(st.session_state[article_key])
 
-        # 生成新关键词逻辑
+        # 生成新关键词
         if selected_fixed_prompt != '请选择模板' and content_key not in st.session_state:
             with st.spinner(f"根据模板 '{selected_fixed_prompt}' 生成关键词..."):
                 new_keywords = generate_keywords_and_links(
@@ -186,9 +185,8 @@ def display_analysis_keywords(
                 )
                 if new_keywords:
                     st.session_state[content_key] = new_keywords
-                    st.experimental_rerun()
 
-        # 生成文章逻辑
+        # 生成文章
         if selected_a7_option != '请选择命令' and article_key not in st.session_state:
             with st.spinner(f"根据命令 '{selected_a7_option}' 生成内容..."):
                 article = generate_article(
@@ -196,10 +194,9 @@ def display_analysis_keywords(
                 )
                 if article:
                     st.session_state[article_key] = article
-                    st.experimental_rerun()
 
-        # 关闭容器样式
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 
