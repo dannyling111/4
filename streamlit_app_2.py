@@ -97,7 +97,6 @@ def generate_keywords_and_links(input_text, language, model, fixed_prompt_append
         except Exception as e:
             st.error(f"Error processing keywords: {str(e)}")
             return []
-
 def display_analysis_keywords(keywords, selected_language, selected_text_model, round_idx, generate_links, depth=0):
     """
     展示生成的关键词，并动态生成相关内容、链接和下拉菜单。
@@ -111,7 +110,13 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
     - depth: 递归深度，默认值为0，用于限制递归层数，避免无限递归
     """
     # 设置递归深度的最大值，避免无限递归
-    MAX_DEPTH = 2  # 您可以根据需要调整最大深度
+    MAX_DEPTH = 3  # 您可以根据需要调整最大深度
+
+    # 定义一组颜色，用于不同的深度级别
+    colors = ['#f0f0f0', '#e6f7ff', '#fff7e6', '#f6ffed', '#f9f0ff', '#fff1f0', '#f0f5ff']
+
+    # 根据深度选择颜色，如果深度超过颜色列表长度，循环使用颜色
+    background_color = colors[depth % len(colors)]
 
     # 获取命令和模板选项
     a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
@@ -119,10 +124,10 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
 
     # 遍历每个关键词并展示相关内容
     for idx, keyword in enumerate(keywords):
-        # 设置容器样式
+        # 设置容器样式，使用不同的背景颜色
         container_style = f"""
             <div style="
-                background-color: #f0f0f0;
+                background-color: {background_color};
                 padding: 10px;
                 margin-bottom: 10px;
                 border-radius: 8px;
@@ -164,7 +169,7 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
         # **将生成内容的代码块移出列布局**
 
         # 检查模板选择并生成新的关键词
-        if selected_fixed_prompt != '请选择模板':
+        if selected_fixed_prompt != '请选择模板' and depth < MAX_DEPTH:
             # 使用唯一的状态键保存是否已生成内容，避免重复生成
             generated_key = f"generated_{select_fixed_prompt_key}"
             if not st.session_state.get(generated_key, False):
