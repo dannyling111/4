@@ -100,13 +100,15 @@ def generate_keywords_and_links(input_text, language, model, fixed_prompt_append
 
 def display_analysis_keywords(keywords, selected_language, selected_text_model, round_idx, generate_links):
     """
-    展示生成的关键词，并在每个关键词后生成对应的内容。
+    展示生成的关键词，并动态生成相关内容、链接和下拉菜单。
     """
+    # 获取命令和模板选项
     a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
     fixed_prompt_options_a6 = ['请选择模板'] + aisettings_df['a6'].dropna().tolist()
 
+    # 遍历每个关键词并展示相关内容
     for idx, keyword in enumerate(keywords):
-        # 设置每个关键词的容器样式
+        # 设置容器样式
         container_style = f"""
             <div style="
                 background-color: #f0f0f0;
@@ -117,11 +119,14 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
         """
         st.markdown(container_style, unsafe_allow_html=True)
 
-        # 使用 Streamlit 的列布局
+        # 使用列布局展示关键词和下拉菜单
         col1, col2 = st.columns([3, 2])
 
+        # 第一列：显示关键词和链接
         with col1:
             st.markdown(f"**{keyword}**")
+
+            # 如果启用了链接生成，展示对应的搜索链接
             if generate_links:
                 encoded_keyword = urllib.parse.quote(keyword)
                 google_search = f"https://www.google.com/search?q={encoded_keyword}"
@@ -131,14 +136,15 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                     f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})"
                 )
 
+        # 第二列：显示下拉菜单用于选择命令和模板
         with col2:
-            # 下拉菜单：选择命令
+            # Dropdown 1：选择命令
             select_a7_key = f"a7_template_select_{round_idx}_{idx}"
             selected_a7_option = st.selectbox(
                 "选择命令", a7_options, key=select_a7_key
             )
 
-            # 下拉菜单：选择模板
+            # Dropdown 2：选择模板
             select_fixed_prompt_key = f"fixed_prompt_select_{round_idx}_{idx}"
             selected_fixed_prompt = st.selectbox(
                 "选择模板", fixed_prompt_options_a6, key=select_fixed_prompt_key
@@ -151,13 +157,13 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                         keyword, selected_language, selected_text_model, selected_fixed_prompt
                     )
                     if new_keywords:
-                        st.write("生成的内容：")
+                        # 将新生成的关键词内容显示在该部分下方
+                        st.write("生成的关键词：")
                         for new_keyword in new_keywords:
                             st.markdown(f"- **{new_keyword}**")
 
         # 关闭容器样式
         st.markdown("</div>", unsafe_allow_html=True)
-
 
 
 
