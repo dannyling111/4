@@ -233,41 +233,48 @@ def wordcloud_generation_page():
 def analysis_generation_page():
     st.header("主题分析生成")
 
-    # 初始化 session_state 用于输入框和生成的分析内容
+    # 初始化 session_state
     if 'input_text_prompt_analysis' not in st.session_state:
         st.session_state.input_text_prompt_analysis = ''
     if 'selected_command' not in st.session_state:
-        st.session_state.selected_command = None  # 初始化命令选择的状态
+        st.session_state.selected_command = None  # 初始化命令选择状态
+    if 'selected_template' not in st.session_state:
+        st.session_state.selected_template = None  # 初始化模板选择状态
     if 'analysis_rounds' not in st.session_state:
         st.session_state.analysis_rounds = []
 
-    # 用户输入文本的提示框
+    # 输入框
     input_text_prompt_analysis = st.text_input(
         "请输入文本生成提示词", value=st.session_state.input_text_prompt_analysis
     )
 
-    # 语言选择和模型选择
+    # 语言和文本模型选择
     selected_language = st.selectbox("选择语言", language_options)
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
 
-    # 新增的命令选择 Dropdown（主页上的，不自动执行）
+    # 命令选择 Dropdown
     a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
     st.session_state.selected_command = st.selectbox(
-        "选择命令", a7_options, index=0  # 默认显示提示信息
+        "选择命令", a7_options, index=0  # 默认显示为“请选择命令”
     )
 
-    # 关键词生成模板选择 Dropdown
+    # 关键词生成模板 Dropdown
     fixed_prompt_options_a6 = ['请选择模板'] + aisettings_df['a6'].dropna().tolist()
-    selected_fixed_prompt_a6 = st.selectbox("选择关键词生成模板", fixed_prompt_options_a6)
+    st.session_state.selected_template = st.selectbox(
+        "选择关键词生成模板", fixed_prompt_options_a6, index=0
+    )
 
-    # 关键词搜索链接生成选项
+    # 是否生成关键词相关链接的 Checkbox
     generate_links = st.checkbox("是否生成关键词相关的搜索链接", value=True)
 
-    # 按键执行的逻辑
+    # 按钮：生成内容
     if st.button("生成内容"):
-        if input_text_prompt_analysis.strip() and st.session_state.selected_command != '请选择命令':
-            with st.spinner("正在生成内容..."):
-                # 根据用户选择的命令生成内容
+        content_generated = False  # 标记是否有内容生成
+
+        # 如果选择了命令，则生成文章内容
+        if (st.session_state.selected_command and 
+            st.session_state.selected_command != '请选择命令'):
+            with st.spinner(f"正在生成关于命令 '{st.session_state.selected_command}' 的内容..."):
                 article = generate_article(
                     input_text_prompt_analysis,
                     st.session_state.selected_command,
@@ -279,22 +286,52 @@ def analysis_generation_page():
                         'type': 'article',
                         'content': article
                     })
-                    st.success("内容生成成功！")
-        else:
-            st.warning("请确保输入提示词并选择命令。")
+                    st.success("命令内容生成成功！")
+                    content_generated = True
 
-    # 清除结果的按键
+        # 如果选择了模板，则生成关键词内容
+        if (st.session_state.selected_template and 
+            st.session_state.selected_template != '请选择模板'):
+            with st.spinner(f"根据模板 '{st.session_state.selected_template}' 生成关键词..."):
+                new_keywords = generate_keywords_and_links(
+                    input_text_prompt_analysis,
+                    selected_language,
+                    selected_text_model,
+                    st.session_state.selected_template
+                )
+                if new_keywords:
+                    st.session_state.analysis_rounds.append({
+                        'type': 'keywords',
+                        'content': new_keywords,
+                        'generate_links': generate_links  # 记录链接生成设置
+                    })
+                    st.success("关键词内容生成成功！")
+                    content_generated = True
+
+        # 如果没有生成任何内容，显示警告
+        if not content_generated:
+            st.warning("请确保至少选择一个命令或模板。")
+
+    # 按钮：清除结果
     if st.button("清除结果"):
         st.session_state.analysis_rounds = []
         st.session_state.input_text_prompt_analysis = ''
-        st.session_state.selected_command = None  # 重置命令选择
+        st.session_state.selected_command = None
+        st.session_state.selected_template = None
         st.success("所有结果已清除！")
 
-    # 展示生成的内容或关键词
+    # 展示生成的内容和关键词
     for round_idx, round_data in enumerate(st.session_state.analysis_rounds):
         if round_data['type'] == 'article':
             st.subheader(f"分析文章：第 {round_idx + 1} 轮")
             st.write(round_data['content'])
+        elif round_data['type'] == 'keywords':
+            st.subheader(f"第 {round_idx + 1} 轮生成的关键词")
+            display_analysis_keywords(
+                round_data['content'], selected_language, selected_text_model,
+                round_idx, round_data['generate_links']
+            )
+
 
 
 
