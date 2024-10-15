@@ -98,10 +98,21 @@ def generate_keywords_and_links(input_text, language, model, fixed_prompt_append
             st.error(f"Error processing keywords: {str(e)}")
             return []
 
-def display_analysis_keywords(keywords, selected_language, selected_text_model, round_idx, generate_links):
+def display_analysis_keywords(keywords, selected_language, selected_text_model, round_idx, generate_links, depth=0):
     """
     展示生成的关键词，并动态生成相关内容、链接和下拉菜单。
+
+    参数：
+    - keywords: 要展示的关键词列表
+    - selected_language: 选择的语言
+    - selected_text_model: 选择的文本生成模型
+    - round_idx: 当前轮次的索引
+    - generate_links: 是否生成关键词的链接
+    - depth: 递归深度，默认值为0，用于限制递归层数，避免无限递归
     """
+    # 设置递归深度的最大值，避免无限递归
+    MAX_DEPTH = 2  # 您可以根据需要调整最大深度
+
     # 获取命令和模板选项
     a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
     fixed_prompt_options_a6 = ['请选择模板'] + aisettings_df['a6'].dropna().tolist()
@@ -139,38 +150,49 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
         # 第二列：显示下拉菜单用于选择命令和模板
         with col2:
             # Dropdown 1：选择命令
-            select_a7_key = f"a7_template_select_{round_idx}_{idx}"
+            select_a7_key = f"a7_template_select_{round_idx}_{idx}_{depth}"
             selected_a7_option = st.selectbox(
                 "选择命令", a7_options, key=select_a7_key
             )
 
             # Dropdown 2：选择模板
-            select_fixed_prompt_key = f"fixed_prompt_select_{round_idx}_{idx}"
+            select_fixed_prompt_key = f"fixed_prompt_select_{round_idx}_{idx}_{depth}"
             selected_fixed_prompt = st.selectbox(
                 "选择模板", fixed_prompt_options_a6, key=select_fixed_prompt_key
             )
 
         # **将生成内容的代码块移出列布局**
+
         # 检查模板选择并生成新的关键词
         if selected_fixed_prompt != '请选择模板':
-            with st.spinner(f"根据模板 '{selected_fixed_prompt}' 生成关键词..."):
-                new_keywords = generate_keywords_and_links(
-                    keyword, selected_language, selected_text_model, selected_fixed_prompt
-                )
-                if new_keywords:
-                    st.write("生成的关键词：")
-                    for new_keyword in new_keywords:
-                        st.markdown(f"- **{new_keyword}**")
-
+            # 使用唯一的状态键保存是否已生成内容，避免重复生成
+            generated_key = f"generated_{select_fixed_prompt_key}"
+            if not st.session_state.get(generated_key, False):
+                with st.spinner(f"根据模板 '{selected_fixed_prompt}' 生成关键词..."):
+                    new_keywords = generate_keywords_and_links(
+                        keyword, selected_language, selected_text_model, selected_fixed_prompt
+                    )
+                    if new_keywords:
+                        st.session_state[generated_key] = True  # 标记为已生成
+                        st.markdown("**生成的关键词：**")
+                        # 递归调用 display_analysis_keywords，增加 depth
+                        display_analysis_keywords(
+                            new_keywords, selected_language, selected_text_model,
+                            round_idx, generate_links, depth=depth+1
+                        )
         # 检查命令选择并生成文章
         if selected_a7_option != '请选择命令':
-            with st.spinner(f"根据命令 '{selected_a7_option}' 生成内容..."):
-                article = generate_article(
-                    keyword, selected_a7_option, selected_language, selected_text_model
-                )
-                if article:
-                    st.write("生成的内容：")
-                    st.write(article)
+            # 使用唯一的状态键保存是否已生成内容，避免重复生成
+            generated_key = f"generated_{select_a7_key}"
+            if not st.session_state.get(generated_key, False):
+                with st.spinner(f"根据命令 '{selected_a7_option}' 生成内容..."):
+                    article = generate_article(
+                        keyword, selected_a7_option, selected_language, selected_text_model
+                    )
+                    if article:
+                        st.session_state[generated_key] = True  # 标记为已生成
+                        st.write("生成的内容：")
+                        st.write(article)
 
         # 关闭容器样式
         st.markdown("</div>", unsafe_allow_html=True)
