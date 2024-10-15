@@ -97,22 +97,21 @@ def generate_keywords_and_links(input_text, language, model, fixed_prompt_append
         except Exception as e:
             st.error(f"Error processing keywords: {str(e)}")
             return []
-
 def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                               round_idx, generate_links):
-    # 定义每一轮的颜色，用于分隔不同轮次的关键词
+    # 定义每一轮的颜色
     round_colors = ["#AED6F1", "#A9DFBF", "#F5B7B1", "#F9E79F", "#D7BDE2"]
-    selected_color = round_colors[round_idx % len(round_colors)]  # 根据轮次循环选择颜色
+    selected_color = round_colors[round_idx % len(round_colors)]
 
-    # 获取当前轮次的关键词、指令、模板信息
-    keyword = st.session_state.get('current_keyword', '')
-    command = st.session_state.get('current_command', '无指令')
-    template = st.session_state.get('current_template', '无模板')
+    # 获取当前轮次的关键词、指令和模板信息
+    keyword = st.session_state.get('current_keyword', '无关键词')
+    command = st.session_state.get('selected_command', '无指令')
+    template = st.session_state.get('selected_template', '无模板')
 
-    # 在每轮的开头展示标题，包括关键词、指令和模板
+    # 展示标题
     st.subheader(f"第 {round_idx + 1} 轮 - 关键词: {keyword} | 指令: {command} | 模板: {template}")
 
-    # 循环展示每个关键词
+    # 遍历关键词并展示
     for idx, keyword in enumerate(keywords):
         container_style = f"""
             <div style="
@@ -141,24 +140,18 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model,
             selected_a7_option = st.selectbox("选择命令", 
                                               ['请选择命令'] + aisettings_df['a7'].dropna().tolist(), 
                                               key=select_a7_key)
-            prev_select_a7_key = f"prev_{select_a7_key}"
-            if prev_select_a7_key not in st.session_state:
-                st.session_state[prev_select_a7_key] = '请选择命令'
 
-            if selected_a7_option != st.session_state[prev_select_a7_key]:
-                st.session_state[prev_select_a7_key] = selected_a7_option
+            if selected_a7_option != st.session_state.get(select_a7_key):
+                st.session_state[select_a7_key] = selected_a7_option
                 handle_selection(keyword, selected_a7_option, '请选择模板', selected_language, selected_text_model, generate_links)
 
             select_fixed_prompt_key = f"fixed_prompt_select_{round_idx}_{idx}"
             selected_fixed_prompt = st.selectbox("选择模板", 
                                                  ['请选择模板'] + aisettings_df['a6'].dropna().tolist(), 
                                                  key=select_fixed_prompt_key)
-            prev_select_fixed_prompt_key = f"prev_{select_fixed_prompt_key}"
-            if prev_select_fixed_prompt_key not in st.session_state:
-                st.session_state[prev_select_fixed_prompt_key] = '请选择模板'
 
-            if selected_fixed_prompt != st.session_state[prev_select_fixed_prompt_key]:
-                st.session_state[prev_select_fixed_prompt_key] = selected_fixed_prompt
+            if selected_fixed_prompt != st.session_state.get(select_fixed_prompt_key):
+                st.session_state[select_fixed_prompt_key] = selected_fixed_prompt
                 handle_selection(keyword, '请选择命令', selected_fixed_prompt, selected_language, selected_text_model, generate_links)
 
         st.markdown("</div>", unsafe_allow_html=True)
@@ -239,9 +232,9 @@ def analysis_generation_page():
     if 'input_text_prompt_analysis' not in st.session_state:
         st.session_state.input_text_prompt_analysis = ''
     if 'selected_command' not in st.session_state:
-        st.session_state.selected_command = None  # 初始化命令选择状态
+        st.session_state.selected_command = None
     if 'selected_template' not in st.session_state:
-        st.session_state.selected_template = None  # 初始化模板选择状态
+        st.session_state.selected_template = None
     if 'analysis_rounds' not in st.session_state:
         st.session_state.analysis_rounds = []
 
@@ -251,34 +244,30 @@ def analysis_generation_page():
     )
     st.session_state.input_text_prompt_analysis = input_text_prompt_analysis
 
-    # 语言和文本模型选择
+    # 语言和模型选择
     selected_language = st.selectbox("选择语言", language_options)
     selected_text_model = st.selectbox("选择文本生成模型", text_bots)
 
     # 命令选择 - 更新 session_state 中的指令
     a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
-    selected_command = st.selectbox(
-        "选择命令", a7_options, index=0
-    )
+    selected_command = st.selectbox("选择命令", a7_options, index=0)
     st.session_state.selected_command = selected_command
 
-    # 关键词生成模板选择
+    # 模板选择
     fixed_prompt_options_a6 = ['请选择模板'] + aisettings_df['a6'].dropna().tolist()
-    selected_template = st.selectbox(
-        "选择关键词生成模板", fixed_prompt_options_a6, index=0
-    )
+    selected_template = st.selectbox("选择关键词生成模板", fixed_prompt_options_a6, index=0)
     st.session_state.selected_template = selected_template
 
-    # 是否生成关键词相关链接
+    # 生成链接的选项
     generate_links = st.checkbox("是否生成关键词相关的搜索链接", value=True)
 
-    # 按钮：生成内容
+    # 生成内容按钮
     if st.button("生成内容"):
-        content_generated = False  # 标记是否有内容生成
+        content_generated = False
 
-        # 生成文章内容
-        if (selected_command and selected_command != '请选择命令'):
-            with st.spinner(f"正在生成关于 '{selected_command}' 的内容..."):
+        # 如果选择了命令，生成文章
+        if selected_command and selected_command != '请选择命令':
+            with st.spinner(f"正在生成关于 '{selected_command}' 的文章..."):
                 article = generate_article(
                     input_text_prompt_analysis,
                     selected_command,
@@ -293,8 +282,8 @@ def analysis_generation_page():
                     st.success("命令内容生成成功！")
                     content_generated = True
 
-        # 根据模板生成关键词内容
-        if (selected_template and selected_template != '请选择模板'):
+        # 如果选择了模板，生成关键词
+        if selected_template and selected_template != '请选择模板':
             with st.spinner(f"根据模板 '{selected_template}' 生成关键词..."):
                 new_keywords = generate_keywords_and_links(
                     input_text_prompt_analysis,
@@ -306,7 +295,7 @@ def analysis_generation_page():
                     st.session_state.analysis_rounds.append({
                         'type': 'keywords',
                         'content': new_keywords,
-                        'generate_links': generate_links  # 记录链接生成设置
+                        'generate_links': generate_links
                     })
                     st.success("关键词内容生成成功！")
                     content_generated = True
@@ -322,24 +311,19 @@ def analysis_generation_page():
         st.session_state.selected_template = None
         st.success("所有结果已清除！")
 
-    # 展示生成的内容和关键词
+    # 展示生成内容和关键词
     for round_idx, round_data in enumerate(st.session_state.analysis_rounds):
         if round_data['type'] == 'article':
             st.subheader(f"分析文章：第 {round_idx + 1} 轮")
             st.write(round_data['content'])
         elif round_data['type'] == 'keywords':
-            # 展示每轮生成的关键词，并传递 prompt 信息
             display_analysis_keywords(
-                round_data['content'],
-                selected_language,
-                selected_text_model,
-                round_idx,
-                round_data['generate_links'],
-                st.session_state.selected_command,  # 确保指令已传入
-                st.session_state.input_text_prompt_analysis  # 确保主题已传入
+                round_data['content'],  # 关键词内容
+                selected_language,      # 语言
+                selected_text_model,    # 文本模型
+                round_idx,              # 当前轮次索引
+                round_data['generate_links']  # 是否生成链接
             )
-
-
 
 
 
