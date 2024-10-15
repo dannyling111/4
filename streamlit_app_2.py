@@ -36,6 +36,10 @@ text_bots = gemini_bots + ["GPT-3.5-Turbo", "GPT-4", "Claude-3-Opus"]
 xlsx_path = "aisetting.xlsx"  # Ensure the correct path to your Excel file
 aisettings_df = pd.read_excel(xlsx_path)
 
+# 在此处定义下拉菜单的选项列表
+a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
+fixed_prompt_options_a6 = ['请选择模板'] + aisettings_df['a6'].dropna().tolist()
+
 # Extract language options
 language_options = aisettings_df['a1'].dropna().tolist()
 
@@ -127,10 +131,6 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
     # Define color scheme; each round has a different color
     round_colors = ['#e6f7ff', '#fff1f0', '#f6ffed', '#fff7e6', '#f9f0ff']
     background_color = round_colors[round_idx % len(round_colors)]
-
-    # Get command and template options
-    a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
-    fixed_prompt_options_a6 = ['请选择模板'] + aisettings_df['a6'].dropna().tolist()
 
     # Iterate over keywords and display content
     for idx, keyword in enumerate(keywords):
