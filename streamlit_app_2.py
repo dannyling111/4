@@ -227,20 +227,21 @@ def analysis_generation_page():
     if 'analysis_rounds' not in st.session_state:
         st.session_state.analysis_rounds = []
 
-    # Input and dropdowns
+    # Input field and dropdowns
     input_text_prompt_analysis = st.text_input(
         "请输入文本生成提示词", value=st.session_state.input_text_prompt_analysis
     )
 
-    selected_language = st.selectbox("选择语言", ["未选择"] + language_options)
+    selected_language = st.selectbox("选择语言", language_options)  # No '未选择'
+    selected_text_model = st.selectbox("选择文本生成模型", text_bots)  # No '未选择'
 
-    selected_text_model = st.selectbox("选择文本生成模型", ["未选择"] + text_bots)
-
+    # 指令 dropdown with '未选择'
     a7_options = ['未选择'] + aisettings_df['a7'].dropna().tolist()
     st.session_state.selected_command_a7 = st.selectbox(
         "选择指令", a7_options, key="command_a7"
     )
 
+    # 关键词生成模板 dropdown with '未选择'
     a6_options = ['未选择'] + aisettings_df['a6'].dropna().tolist()
     st.session_state.selected_fixed_prompt_a6 = st.selectbox(
         "选择关键词生成模板", a6_options, key="template_a6"
@@ -251,15 +252,14 @@ def analysis_generation_page():
     # Handle the '生成关键词' button
     if st.button("生成关键词"):
         if input_text_prompt_analysis.strip():
-            # Build the prompt using only non-default dropdown selections
+            # Build the prompt only with valid selections
             prompt_components = [input_text_prompt_analysis]
 
             if st.session_state.selected_command_a7 != '未选择':
                 prompt_components.append(f"指令: {st.session_state.selected_command_a7}")
             if st.session_state.selected_fixed_prompt_a6 != '未选择':
                 prompt_components.append(f"模板: {st.session_state.selected_fixed_prompt_a6}")
-            if selected_language != "未选择":
-                prompt_components.append(f"语言: {selected_language}")
+            prompt_components.append(f"语言: {selected_language}")
 
             final_prompt = "\n".join(prompt_components)
 
@@ -292,6 +292,7 @@ def analysis_generation_page():
         elif round_data['type'] == 'article':
             st.subheader(f"分析文章：第 {round_idx + 1} 轮")
             st.write(round_data['content'])
+
 
 
 
