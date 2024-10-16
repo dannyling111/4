@@ -77,6 +77,59 @@ def fetch_text_response(prompt, model):
 
     return asyncio.run(fetch())
 
+def get_google_trends():
+    pytrends = TrendReq(hl='en-US', tz=360)
+    countries = ['united_states', 'japan', 'hong_kong', 'united_kingdom', 'taiwan', 'india', 'singapore', 'australia']
+    trends_list = []
+    for country in countries:
+        trends = pytrends.trending_searches(pn=country)
+        trends_list.extend(trends.values.tolist())
+    return [item[0].strip() for item in trends_list]
+
+def generate_wordcloud(keywords):
+    font_path = 'NotoSansCJK-Regular.ttc'  # Update to your font path
+    wordcloud = WordCloud(
+        font_path=font_path,
+        width=1600,
+        height=1600,
+        background_color="white",
+        color_func=muted_color_func
+    ).generate_from_frequencies(Counter(keywords))
+
+    plt.figure(figsize=(10, 10), dpi=100)
+    plt.imshow(wordcloud, interpolation='bilinear')
+    plt.axis("off")
+
+    buf = BytesIO()
+    plt.savefig(buf, format="png")
+    buf.seek(0)
+    plt.close()  # Close the figure to free memory
+    return buf, wordcloud.words_
+
+def muted_color_func(word, font_size, position, orientation, random_state=None, **kwargs):
+    h = random.randint(180, 360)
+    s = random.randint(50, 80)
+    l = random.randint(40, 50)
+    return f"hsl({h}, {s}%, {l}%)"
+
+def wordcloud_generation_page():
+    st.header("生成 Google Trends 词云")
+    if st.button("生成词云"):
+        with st.spinner("正在生成词云..."):
+            trend_keywords = get_google_trends()
+            wordcloud_image, keyword_frequencies = generate_wordcloud(trend_keywords)
+
+            st.image(wordcloud_image, caption="Google Trends 词云", use_column_width=True)
+
+            sorted_keywords = sorted(keyword_frequencies.items(), key=lambda x: x[1], reverse=True)[:20]
+            st.subheader("关键词搜索链接")
+            for keyword, _ in sorted_keywords:
+                encoded_keyword = urllib.parse.quote(keyword)
+                google_search_link = f"https://www.google.com/search?q={encoded_keyword}"
+                google_news_link = f"https://news.google.com/search?q={encoded_keyword}"
+                youtube_link = f"https://www.youtube.com/results?search_query={encoded_keyword}"
+                st.markdown(f"- {keyword}: [Google Search]({google_search_link}) | [Google News]({google_news_link}) | [YouTube]({youtube_link})")
+
 def handle_selection(keyword, a7_option, fixed_prompt, language, model, generate_links):
     # Ensure 'analysis_rounds' is initialized
     if 'analysis_rounds' not in st.session_state or not isinstance(st.session_state.analysis_rounds, dict):
@@ -250,6 +303,40 @@ def analysis_generation_page():
                     round_data['keywords'], st.session_state.selected_language, st.session_state.selected_text_model,
                     round_idx, round_data.get('generate_links', True)
                 )
+
+def excel_page():
+    st.header("Excel 文件读取与编辑")
+
+    # Excel file path (fixed path)
+    xlsx_path = "aisetting.xlsx"
+
+    try:
+        # Read all sheets from the Excel file
+        df = pd.read_excel(xlsx_path, sheet_name=None)
+        sheet_names = list(df.keys())  # Get all sheet names
+        selected_sheet = st.selectbox("选择工作表", sheet_names)  # Select sheet
+
+        # Get data from the current sheet
+        data = df[selected_sheet]
+        st.write(f"**当前显示的表：{selected_sheet}**")
+
+        # Display editable table
+        edited_data = st.data_editor(data, use_container_width=True)
+
+        # Button to save edited content
+        if st.button("保存编辑后的文件"):
+            with pd.ExcelWriter(xlsx_path, engine='openpyxl') as writer:
+                # Iterate over all sheets and save edited content
+                for sheet_name, sheet_data in df.items():
+                    if sheet_name == selected_sheet:
+                        edited_data.to_excel(writer, index=False, sheet_name=sheet_name)  # Save edited data
+                    else:
+                        sheet_data.to_excel(writer, index=False, sheet_name=sheet_name)  # Retain unedited data
+
+            st.success(f"已成功保存编辑后的内容到 {xlsx_path}")
+
+    except Exception as e:
+        st.error(f"读取或保存 Excel 文件时出错: {e}")
 
 def main():
     st.sidebar.title("导航")
