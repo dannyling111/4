@@ -79,6 +79,16 @@ def handle_selection(keyword_path, a7_option, fixed_prompt, language, model, gen
     # 获取当前关键词的节点引用
     node = st.session_state.analysis_data
     for key in keyword_path:
+        # 初始化 'sub_keywords' 字典
+        if 'sub_keywords' not in node:
+            node['sub_keywords'] = {}
+        # 初始化当前关键词节点
+        if key not in node['sub_keywords']:
+            node['sub_keywords'][key] = {
+                'articles': [],
+                'sub_keywords': {},
+                'generate_links': generate_links
+            }
         node = node['sub_keywords'][key]
 
     # 如果选择了命令，生成文章
@@ -94,6 +104,9 @@ def handle_selection(keyword_path, a7_option, fixed_prompt, language, model, gen
         with st.spinner(f"根据模板 {fixed_prompt} 生成更多关键词..."):
             new_keywords = generate_keywords_and_links(keyword_path[-1], language, model, fixed_prompt)
             if new_keywords:
+                # 初始化 'sub_keywords' 字典
+                if 'sub_keywords' not in node:
+                    node['sub_keywords'] = {}
                 for kw in new_keywords:
                     if kw not in node['sub_keywords']:
                         node['sub_keywords'][kw] = {
@@ -102,6 +115,7 @@ def handle_selection(keyword_path, a7_option, fixed_prompt, language, model, gen
                             'generate_links': generate_links
                         }
                 st.success("成功生成更多关键词！")
+
 
 def display_analysis_keywords(node, keyword_path, selected_language, selected_text_model, level=0):
     # 定义颜色
@@ -162,8 +176,9 @@ def display_analysis_keywords(node, keyword_path, selected_language, selected_te
     st.markdown("</div>", unsafe_allow_html=True)
 
     # 递归显示子关键词
-    for sub_kw in node.get('sub_keywords', {}):
-        display_analysis_keywords(node['sub_keywords'][sub_kw], keyword_path + [sub_kw], selected_language, selected_text_model, level + 1)
+    sub_keywords = node.get('sub_keywords', {})
+    for sub_kw in sub_keywords:
+        display_analysis_keywords(sub_keywords[sub_kw], keyword_path + [sub_kw], selected_language, selected_text_model, level + 1)
 
 def analysis_generation_page():
     st.header("主题分析生成")
