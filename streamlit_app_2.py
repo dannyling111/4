@@ -98,16 +98,13 @@ def generate_keywords_and_links(input_text, language, model, fixed_prompt_append
             return []
 
 def display_analysis_keywords(keywords, selected_language, selected_text_model, round_idx, generate_links):
-    # 定义每一轮的颜色，用于分隔不同轮次的关键词
     round_colors = ["#AED6F1", "#A9DFBF", "#F5B7B1", "#F9E79F", "#D7BDE2"]
-    selected_color = round_colors[round_idx % len(round_colors)]  # 根据轮次循环选择颜色
+    selected_color = round_colors[round_idx % len(round_colors)]
 
-    # 获取命令和模板的选项
     a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
     fixed_prompt_options_a6 = ['请选择模板'] + aisettings_df['a6'].dropna().tolist()
 
     for idx, keyword in enumerate(keywords):
-        # 使用动态颜色设置背景和边框样式
         container_style = f"""
             <div style="
                 background-color: {selected_color};
@@ -116,12 +113,9 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                 border-radius: 8px;
                 border: 1px solid #d0d0d0;">
         """
-
-        # 渲染样式容器
         st.markdown(container_style, unsafe_allow_html=True)
 
-        # 使用 Streamlit 的列布局展示关键词和选项
-        col1, col2 = st.columns([3, 2])  # 两列布局：关键词 | 下拉菜单
+        col1, col2 = st.columns([3, 2])
 
         with col1:
             st.markdown(f"**{keyword}**")
@@ -133,62 +127,35 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                 st.markdown(f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})")
 
         with col2:
-            # 命令选择下拉菜单
             select_a7_key = f"a7_template_select_{round_idx}_{idx}"
             selected_a7_option = st.selectbox("选择命令", a7_options, key=select_a7_key)
 
-            prev_select_a7_key = f"prev_{select_a7_key}"
-            if prev_select_a7_key not in st.session_state:
-                st.session_state[prev_select_a7_key] = a7_options[0]
-
-            if selected_a7_option != st.session_state[prev_select_a7_key]:
-                st.session_state[prev_select_a7_key] = selected_a7_option
-                if selected_a7_option != '请选择命令':
-                    handle_selection(keyword, selected_a7_option, '请选择模板', selected_language, selected_text_model, generate_links)
-
-            # 模板选择下拉菜单
             select_fixed_prompt_key = f"fixed_prompt_select_{round_idx}_{idx}"
             selected_fixed_prompt = st.selectbox("选择模板", fixed_prompt_options_a6, key=select_fixed_prompt_key)
 
-            prev_select_fixed_prompt_key = f"prev_{select_fixed_prompt_key}"
-            if prev_select_fixed_prompt_key not in st.session_state:
-                st.session_state[prev_select_fixed_prompt_key] = fixed_prompt_options_a6[0]
+        # 处理选择并在当前关键词下方显示结果
+        if selected_a7_option != '请选择命令' or selected_fixed_prompt != '请选择模板':
+            with st.expander(f"查看 {keyword} 的扩展内容", expanded=True):
+                handle_selection(keyword, selected_a7_option, selected_fixed_prompt, selected_language, selected_text_model, generate_links, round_idx, idx)
 
-            if selected_fixed_prompt != st.session_state[prev_select_fixed_prompt_key]:
-                st.session_state[prev_select_fixed_prompt_key] = selected_fixed_prompt
-                if selected_fixed_prompt != '请选择模板':
-                    handle_selection(keyword, '请选择命令', selected_fixed_prompt, selected_language, selected_text_model, generate_links)
-
-        # 关闭容器
         st.markdown("</div>", unsafe_allow_html=True)
 
-
-
-
-def handle_selection(keyword, a7_option, fixed_prompt, language, model, generate_links):
-    # If an a7 option is selected, generate an article
+def handle_selection(keyword, a7_option, fixed_prompt, language, model, generate_links, round_idx, idx):
     if a7_option != '请选择命令':
         with st.spinner(f"生成关于 {keyword} 的文章..."):
             article = generate_article(keyword, a7_option, language, model)
             if article:
-                st.session_state.analysis_rounds.append({
-                    'type': 'article',
-                    'content': article
-                })
+                st.markdown(f"### 基于命令 '{a7_option}' 生成的文章")
+                st.write(article)
                 st.success(f"成功生成关于 {keyword} 的文章！")
 
-    # If a fixed prompt is selected, generate more keywords
     if fixed_prompt != '请选择模板':
         with st.spinner(f"根据模板 {fixed_prompt} 生成更多关键词..."):
             new_keywords = generate_keywords_and_links(keyword, language, model, fixed_prompt)
             if new_keywords:
-                st.session_state.analysis_rounds.append({
-                    'type': 'keywords',
-                    'content': new_keywords,
-                    'generate_links': generate_links  # Use the current generate_links setting
-                })
+                st.markdown(f"### 基于模板 '{fixed_prompt}' 生成的新关键词")
+                display_analysis_keywords(new_keywords, language, model, round_idx + 1, generate_links)
                 st.success("成功生成更多关键词！")
-
 def generate_article(keyword, command, language, model):
     prompt = f"关键词: {keyword}\n命令: {command}\n语言: {language}"
     return fetch_text_response(prompt, model)
