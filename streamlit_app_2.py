@@ -110,20 +110,18 @@ def display_analysis_keywords(initial_keywords, selected_language, selected_text
         keyword, round_idx = keyword_queue.popleft()
         selected_color = round_colors[round_idx % len(round_colors)]
 
-        container_style = f"""
-            <div style="
-                background-color: {selected_color};
-                padding: 10px;
-                margin-bottom: 10px;
-                border-radius: 8px;
-                border: 1px solid #d0d0d0;">
-        """
-        st.markdown(container_style, unsafe_allow_html=True)
+        with st.container():
+            st.markdown(f"""
+                <div style="
+                    background-color: {selected_color};
+                    padding: 10px;
+                    margin-bottom: 10px;
+                    border-radius: 8px;
+                    border: 1px solid #d0d0d0;">
+                    <h3>{keyword}</h3>
+                </div>
+            """, unsafe_allow_html=True)
 
-        col1, col2 = st.columns([3, 2])
-
-        with col1:
-            st.markdown(f"**{keyword}**")
             if generate_links:
                 encoded_keyword = urllib.parse.quote(keyword)
                 google_search = f"https://www.google.com/search?q={encoded_keyword}"
@@ -131,19 +129,29 @@ def display_analysis_keywords(initial_keywords, selected_language, selected_text
                 bilibili_search = f"https://search.bilibili.com/all?keyword={encoded_keyword}"
                 st.markdown(f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})")
 
-        with col2:
-            select_a7_key = f"a7_template_select_{round_idx}_{id(keyword)}"
-            selected_a7_option = st.selectbox("选择命令", a7_options, key=select_a7_key)
+            col1, col2 = st.columns(2)
+            with col1:
+                select_a7_key = f"a7_template_select_{round_idx}_{id(keyword)}"
+                selected_a7_option = st.selectbox("选择命令", a7_options, key=select_a7_key)
 
-            select_fixed_prompt_key = f"fixed_prompt_select_{round_idx}_{id(keyword)}"
-            selected_fixed_prompt = st.selectbox("选择模板", fixed_prompt_options_a6, key=select_fixed_prompt_key)
+            with col2:
+                select_fixed_prompt_key = f"fixed_prompt_select_{round_idx}_{id(keyword)}"
+                selected_fixed_prompt = st.selectbox("选择模板", fixed_prompt_options_a6, key=select_fixed_prompt_key)
 
-        if selected_a7_option != '请选择命令' or selected_fixed_prompt != '请选择模板':
-            new_keywords = handle_selection(keyword, selected_a7_option, selected_fixed_prompt, selected_language, selected_text_model, generate_links)
-            if new_keywords:
-                keyword_queue.extend([(kw, round_idx + 1) for kw in new_keywords])
+            if selected_a7_option != '请选择命令':
+                with st.expander(f"查看基于命令 '{selected_a7_option}' 生成的内容", expanded=True):
+                    article = generate_article(keyword, selected_a7_option, selected_language, selected_text_model)
+                    if article:
+                        st.write(article)
+                        st.success(f"成功生成关于 {keyword} 的文章！")
 
-        st.markdown("</div>", unsafe_allow_html=True)
+            if selected_fixed_prompt != '请选择模板':
+                with st.expander(f"查看基于模板 '{selected_fixed_prompt}' 生成的新关键词", expanded=True):
+                    new_keywords = generate_keywords_and_links(keyword, selected_language, selected_text_model, selected_fixed_prompt)
+                    if new_keywords:
+                        st.write(", ".join(new_keywords))
+                        st.success("成功生成更多关键词！")
+                        keyword_queue.extend([(kw, round_idx + 1) for kw in new_keywords])
 
 def handle_selection(keyword, a7_option, fixed_prompt, language, model, generate_links):
     new_keywords = []
@@ -293,15 +301,15 @@ def analysis_generation_page():
 
     # 展示生成的内容和关键词
     for round_idx, round_data in enumerate(st.session_state.analysis_rounds):
-        if round_data['type'] == 'article':
-            st.subheader(f"分析文章：第 {round_idx + 1} 轮")
-            st.write(round_data['content'])
-        elif round_data['type'] == 'keywords':
+        if round_data['type'] == 'keywords':
             st.subheader(f"第 {round_idx + 1} 轮生成的关键词")
             display_analysis_keywords(
                 round_data['content'], selected_language, selected_text_model,
                 round_idx, round_data['generate_links']
             )
+        elif round_data['type'] == 'article':
+            st.subheader(f"分析文章：第 {round_idx + 1} 轮")
+            st.write(round_data['content'])
 
 
 
