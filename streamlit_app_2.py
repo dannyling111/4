@@ -153,8 +153,8 @@ def display_analysis_keywords(node, keyword_path, selected_language, selected_te
         # 展示与关键词相关的文章
         for article in node.get('articles', []):
             st.write(article)
-
-   with col2:
+            
+    with col2:
         # 命令选择下拉菜单
         select_a7_key = '_'.join(['a7'] + keyword_path)
         
