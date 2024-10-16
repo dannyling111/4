@@ -97,56 +97,56 @@ def generate_keywords_and_links(input_text, language, model, fixed_prompt_append
         except Exception as e:
             st.error(f"Error processing keywords: {str(e)}")
             return []
-def display_analysis_keywords(keywords, selected_language, selected_text_model, round_idx, generate_links):
+def display_analysis_keywords(keywords, selected_language, selected_text_model, round_idx, generate_links, depth=0):
     round_colors = ["#AED6F1", "#A9DFBF", "#F5B7B1", "#F9E79F", "#D7BDE2"]
-    selected_color = round_colors[round_idx % len(round_colors)]
-
     a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
     fixed_prompt_options_a6 = ['请选择模板'] + aisettings_df['a6'].dropna().tolist()
 
     for idx, keyword in enumerate(keywords):
+        selected_color = round_colors[(round_idx + depth) % len(round_colors)]
+        
         container_style = f"""
             <div style="
                 background-color: {selected_color};
                 padding: 10px;
                 margin-bottom: 10px;
                 border-radius: 8px;
-                border: 1px solid #d0d0d0;">
+                border: 1px solid #d0d0d0;
+                margin-left: {depth * 20}px;">
         """
         st.markdown(container_style, unsafe_allow_html=True)
 
-        col1, col2 = st.columns([3, 2])
+        st.markdown(f"{'  ' * depth}**{keyword}**")
+        
+        if generate_links:
+            encoded_keyword = urllib.parse.quote(keyword)
+            google_search = f"https://www.google.com/search?q={encoded_keyword}"
+            youtube_search = f"https://www.youtube.com/results?search_query={encoded_keyword}"
+            bilibili_search = f"https://search.bilibili.com/all?keyword={encoded_keyword}"
+            st.markdown(f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})")
 
+        col1, col2 = st.columns(2)
         with col1:
-            st.markdown(f"**{keyword}**")
-            if generate_links:
-                encoded_keyword = urllib.parse.quote(keyword)
-                google_search = f"https://www.google.com/search?q={encoded_keyword}"
-                youtube_search = f"https://www.youtube.com/results?search_query={encoded_keyword}"
-                bilibili_search = f"https://search.bilibili.com/all?keyword={encoded_keyword}"
-                st.markdown(f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})")
-
-        with col2:
-            select_a7_key = f"a7_template_select_{round_idx}_{idx}"
+            select_a7_key = f"a7_template_select_{round_idx}_{depth}_{idx}"
             selected_a7_option = st.selectbox("选择命令", a7_options, key=select_a7_key)
 
-            select_fixed_prompt_key = f"fixed_prompt_select_{round_idx}_{idx}"
+        with col2:
+            select_fixed_prompt_key = f"fixed_prompt_select_{round_idx}_{depth}_{idx}"
             selected_fixed_prompt = st.selectbox("选择模板", fixed_prompt_options_a6, key=select_fixed_prompt_key)
 
-        # 处理选择并在当前关键词下方显示结果
         if selected_a7_option != '请选择命令':
-            with st.expander(f"查看基于命令 '{selected_a7_option}' 生成的内容", expanded=True):
-                article = generate_article(keyword, selected_a7_option, selected_language, selected_text_model)
-                if article:
-                    st.write(article)
-                    st.success(f"成功生成关于 {keyword} 的文章！")
+            st.markdown(f"##### 基于命令 '{selected_a7_option}' 生成的内容:")
+            article = generate_article(keyword, selected_a7_option, selected_language, selected_text_model)
+            if article:
+                st.write(article)
+                st.success(f"成功生成关于 {keyword} 的文章！")
 
         if selected_fixed_prompt != '请选择模板':
-            with st.expander(f"查看基于模板 '{selected_fixed_prompt}' 生成的新关键词", expanded=True):
-                new_keywords = generate_keywords_and_links(keyword, selected_language, selected_text_model, selected_fixed_prompt)
-                if new_keywords:
-                    display_analysis_keywords(new_keywords, selected_language, selected_text_model, round_idx + 1, generate_links)
-                    st.success("成功生成更多关键词！")
+            st.markdown(f"##### 基于模板 '{selected_fixed_prompt}' 生成的新关键词:")
+            new_keywords = generate_keywords_and_links(keyword, selected_language, selected_text_model, selected_fixed_prompt)
+            if new_keywords:
+                display_analysis_keywords(new_keywords, selected_language, selected_text_model, round_idx, generate_links, depth + 1)
+                st.success("成功生成更多关键词！")
 
         st.markdown("</div>", unsafe_allow_html=True)
 
