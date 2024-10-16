@@ -79,10 +79,8 @@ def handle_selection(keyword_path, a7_option, fixed_prompt, language, model, gen
     # 获取当前关键词的节点引用
     node = st.session_state.analysis_data
     for key in keyword_path:
-        # 初始化 'sub_keywords' 字典
         if 'sub_keywords' not in node:
             node['sub_keywords'] = {}
-        # 初始化当前关键词节点
         if key not in node['sub_keywords']:
             node['sub_keywords'][key] = {
                 'articles': [],
@@ -104,7 +102,6 @@ def handle_selection(keyword_path, a7_option, fixed_prompt, language, model, gen
         with st.spinner(f"根据模板 {fixed_prompt} 生成更多关键词..."):
             new_keywords = generate_keywords_and_links(keyword_path[-1], language, model, fixed_prompt)
             if new_keywords:
-                # 初始化 'sub_keywords' 字典
                 if 'sub_keywords' not in node:
                     node['sub_keywords'] = {}
                 for kw in new_keywords:
