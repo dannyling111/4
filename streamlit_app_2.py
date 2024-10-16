@@ -227,11 +227,10 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
 
         st.markdown("</div>", unsafe_allow_html=True)
 
-
 def analysis_generation_page():
     st.header("主题分析生成")
 
-    # 初始化 session_state
+    # 初始化 session_state，如果不存在则设置为空字典
     if 'analysis_rounds' not in st.session_state:
         st.session_state.analysis_rounds = {}
 
@@ -291,19 +290,21 @@ def analysis_generation_page():
         st.session_state.input_text_prompt_analysis = ''
         st.success("所有结果已清除！")
 
-    for round_idx, (keyword, round_data) in enumerate(st.session_state.analysis_rounds.items()):
-        if round_data['articles']:
-            st.subheader(f"分析文章：关于关键词 '{keyword}'")
-            for article in round_data['articles']:
-                st.write(article)
+    # 确保 st.session_state.analysis_rounds 是一个字典
+    if isinstance(st.session_state.analysis_rounds, dict):
+        # 展示生成的内容
+        for round_idx, (keyword, round_data) in enumerate(st.session_state.analysis_rounds.items()):
+            if round_data['articles']:
+                st.subheader(f"分析文章：关于关键词 '{keyword}'")
+                for article in round_data['articles']:
+                    st.write(article)
 
-        if round_data['keywords']:
-            st.subheader(f"关于关键词 '{keyword}' 生成的关键词")
-            display_analysis_keywords(
-                round_data['keywords'], selected_language, selected_text_model,
-                round_idx, generate_links
-            )
-
+            if round_data['keywords']:
+                st.subheader(f"关于关键词 '{keyword}' 生成的关键词")
+                display_analysis_keywords(
+                    round_data['keywords'], selected_language, selected_text_model,
+                    round_idx, generate_links
+                )
 
 
 
