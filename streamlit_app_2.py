@@ -209,7 +209,7 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
             # Handle command selection
             if selected_a7_option != '请选择命令':
                 handle_selection(keyword, selected_a7_option, '请选择模板', selected_language, selected_text_model, generate_links)
-                st.experimental_rerun()
+                st.rerun()
 
             # Fixed prompt selection dropdown
             select_fixed_prompt_key = f"fixed_prompt_select_{round_idx}_{idx}"
@@ -218,7 +218,7 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
             # Handle fixed prompt selection
             if selected_fixed_prompt != '请选择模板':
                 handle_selection(keyword, '请选择命令', selected_fixed_prompt, selected_language, selected_text_model, generate_links)
-                st.experimental_rerun()
+                st.rerun()
 
         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -287,7 +287,7 @@ def analysis_generation_page():
         st.session_state.selected_command = '请选择命令'
         st.session_state.selected_template = '请选择模板'
         st.success("所有结果已清除！")
-        st.experimental_rerun()
+        st.rerun()
 
     # Ensure 'analysis_rounds' is a non-empty dictionary
     if st.session_state.analysis_rounds:
