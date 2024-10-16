@@ -157,21 +157,42 @@ def display_analysis_keywords(node, keyword_path, selected_language, selected_te
         for article in node.get('articles', []):
             st.write(article)
 
-    with col2:
-        # 生成唯一的 key
+   with col2:
+        # 命令选择下拉菜单
         select_a7_key = '_'.join(['a7'] + keyword_path)
-        selected_a7_option = st.selectbox("选择命令", a7_options, key=select_a7_key)
+        
+        def on_a7_change():
+            selected_a7_option = st.session_state[select_a7_key]
+            if selected_a7_option != '请选择命令':
+                handle_selection(keyword_path, selected_a7_option, '请选择模板', selected_language, selected_text_model, node.get('generate_links', True))
+                # 重置选项
+                st.session_state[select_a7_key] = '请选择命令'
+                st.experimental_rerun()
+        
+        st.selectbox(
+            "选择命令",
+            options=a7_options,
+            key=select_a7_key,
+            on_change=on_a7_change
+        )
 
+        # 模板选择下拉菜单
         select_fixed_prompt_key = '_'.join(['a6'] + keyword_path)
-        selected_fixed_prompt = st.selectbox("选择模板", fixed_prompt_options_a6, key=select_fixed_prompt_key)
-
-        # 处理命令选择
-        if selected_a7_option != '请选择命令' or selected_fixed_prompt != '请选择模板':
-            handle_selection(keyword_path, selected_a7_option, selected_fixed_prompt, selected_language, selected_text_model, node.get('generate_links', True))
-            # 重置下拉菜单
-            st.session_state[select_a7_key] = '请选择命令'
-            st.session_state[select_fixed_prompt_key] = '请选择模板'
-            st.experimental_rerun()
+        
+        def on_a6_change():
+            selected_fixed_prompt = st.session_state[select_fixed_prompt_key]
+            if selected_fixed_prompt != '请选择模板':
+                handle_selection(keyword_path, '请选择命令', selected_fixed_prompt, selected_language, selected_text_model, node.get('generate_links', True))
+                # 重置选项
+                st.session_state[select_fixed_prompt_key] = '请选择模板'
+                st.experimental_rerun()
+        
+        st.selectbox(
+            "选择模板",
+            options=fixed_prompt_options_a6,
+            key=select_fixed_prompt_key,
+            on_change=on_a6_change
+        )
 
     st.markdown("</div>", unsafe_allow_html=True)
 
