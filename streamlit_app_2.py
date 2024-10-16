@@ -1,3 +1,4 @@
+import time
 import pandas as pd
 from fastapi_poe.types import ProtocolMessage
 from fastapi_poe.client import get_bot_response
@@ -19,9 +20,6 @@ from io import BytesIO
 import matplotlib.pyplot as plt
 import openpyxl
 import urllib.parse
-from collections import deque
-
-
 
 # Configure Matplotlib to use 'Agg' backend for Streamlit compatibility
 plt.switch_backend('Agg')
@@ -99,29 +97,35 @@ def generate_keywords_and_links(input_text, language, model, fixed_prompt_append
         except Exception as e:
             st.error(f"Error processing keywords: {str(e)}")
             return []
-def display_analysis_keywords(initial_keywords, selected_language, selected_text_model, initial_round_idx, generate_links):
+
+def display_analysis_keywords(keywords, selected_language, selected_text_model, round_idx, generate_links):
+    # 定义每一轮的颜色，用于分隔不同轮次的关键词
     round_colors = ["#AED6F1", "#A9DFBF", "#F5B7B1", "#F9E79F", "#D7BDE2"]
+    selected_color = round_colors[round_idx % len(round_colors)]  # 根据轮次循环选择颜色
+
+    # 获取命令和模板的选项
     a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
     fixed_prompt_options_a6 = ['请选择模板'] + aisettings_df['a6'].dropna().tolist()
 
-    keyword_queue = deque([(kw, initial_round_idx) for kw in initial_keywords])
+    for idx, keyword in enumerate(keywords):
+        # 使用动态颜色设置背景和边框样式
+        container_style = f"""
+            <div style="
+                background-color: {selected_color};
+                padding: 10px;
+                margin-bottom: 10px;
+                border-radius: 8px;
+                border: 1px solid #d0d0d0;">
+        """
 
-    while keyword_queue:
-        keyword, round_idx = keyword_queue.popleft()
-        selected_color = round_colors[round_idx % len(round_colors)]
+        # 渲染样式容器
+        st.markdown(container_style, unsafe_allow_html=True)
 
-        with st.container():
-            st.markdown(f"""
-                <div style="
-                    background-color: {selected_color};
-                    padding: 10px;
-                    margin-bottom: 10px;
-                    border-radius: 8px;
-                    border: 1px solid #d0d0d0;">
-                    <h3>{keyword}</h3>
-                </div>
-            """, unsafe_allow_html=True)
+        # 使用 Streamlit 的列布局展示关键词和选项
+        col1, col2 = st.columns([3, 2])  # 两列布局：关键词 | 下拉菜单
 
+        with col1:
+            st.markdown(f"**{keyword}**")
             if generate_links:
                 encoded_keyword = urllib.parse.quote(keyword)
                 google_search = f"https://www.google.com/search?q={encoded_keyword}"
@@ -129,50 +133,62 @@ def display_analysis_keywords(initial_keywords, selected_language, selected_text
                 bilibili_search = f"https://search.bilibili.com/all?keyword={encoded_keyword}"
                 st.markdown(f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})")
 
-            col1, col2 = st.columns(2)
-            with col1:
-                select_a7_key = f"a7_template_select_{round_idx}_{id(keyword)}"
-                selected_a7_option = st.selectbox("选择命令", a7_options, key=select_a7_key)
+        with col2:
+            # 命令选择下拉菜单
+            select_a7_key = f"a7_template_select_{round_idx}_{idx}"
+            selected_a7_option = st.selectbox("选择命令", a7_options, key=select_a7_key)
 
-            with col2:
-                select_fixed_prompt_key = f"fixed_prompt_select_{round_idx}_{id(keyword)}"
-                selected_fixed_prompt = st.selectbox("选择模板", fixed_prompt_options_a6, key=select_fixed_prompt_key)
+            prev_select_a7_key = f"prev_{select_a7_key}"
+            if prev_select_a7_key not in st.session_state:
+                st.session_state[prev_select_a7_key] = a7_options[0]
 
-            if selected_a7_option != '请选择命令':
-                with st.expander(f"查看基于命令 '{selected_a7_option}' 生成的内容", expanded=True):
-                    article = generate_article(keyword, selected_a7_option, selected_language, selected_text_model)
-                    if article:
-                        st.write(article)
-                        st.success(f"成功生成关于 {keyword} 的文章！")
+            if selected_a7_option != st.session_state[prev_select_a7_key]:
+                st.session_state[prev_select_a7_key] = selected_a7_option
+                if selected_a7_option != '请选择命令':
+                    handle_selection(keyword, selected_a7_option, '请选择模板', selected_language, selected_text_model, generate_links)
 
-            if selected_fixed_prompt != '请选择模板':
-                with st.expander(f"查看基于模板 '{selected_fixed_prompt}' 生成的新关键词", expanded=True):
-                    new_keywords = generate_keywords_and_links(keyword, selected_language, selected_text_model, selected_fixed_prompt)
-                    if new_keywords:
-                        st.write(", ".join(new_keywords))
-                        st.success("成功生成更多关键词！")
-                        keyword_queue.extend([(kw, round_idx + 1) for kw in new_keywords])
+            # 模板选择下拉菜单
+            select_fixed_prompt_key = f"fixed_prompt_select_{round_idx}_{idx}"
+            selected_fixed_prompt = st.selectbox("选择模板", fixed_prompt_options_a6, key=select_fixed_prompt_key)
+
+            prev_select_fixed_prompt_key = f"prev_{select_fixed_prompt_key}"
+            if prev_select_fixed_prompt_key not in st.session_state:
+                st.session_state[prev_select_fixed_prompt_key] = fixed_prompt_options_a6[0]
+
+            if selected_fixed_prompt != st.session_state[prev_select_fixed_prompt_key]:
+                st.session_state[prev_select_fixed_prompt_key] = selected_fixed_prompt
+                if selected_fixed_prompt != '请选择模板':
+                    handle_selection(keyword, '请选择命令', selected_fixed_prompt, selected_language, selected_text_model, generate_links)
+
+        # 关闭容器
+        st.markdown("</div>", unsafe_allow_html=True)
+
+
+
 
 def handle_selection(keyword, a7_option, fixed_prompt, language, model, generate_links):
-    new_keywords = []
-
+    # If an a7 option is selected, generate an article
     if a7_option != '请选择命令':
         with st.spinner(f"生成关于 {keyword} 的文章..."):
             article = generate_article(keyword, a7_option, language, model)
             if article:
-                st.markdown(f"### 基于命令 '{a7_option}' 生成的文章")
-                st.write(article)
+                st.session_state.analysis_rounds.append({
+                    'type': 'article',
+                    'content': article
+                })
                 st.success(f"成功生成关于 {keyword} 的文章！")
 
+    # If a fixed prompt is selected, generate more keywords
     if fixed_prompt != '请选择模板':
         with st.spinner(f"根据模板 {fixed_prompt} 生成更多关键词..."):
             new_keywords = generate_keywords_and_links(keyword, language, model, fixed_prompt)
             if new_keywords:
-                st.markdown(f"### 基于模板 '{fixed_prompt}' 生成的新关键词")
-                st.write(", ".join(new_keywords))
+                st.session_state.analysis_rounds.append({
+                    'type': 'keywords',
+                    'content': new_keywords,
+                    'generate_links': generate_links  # Use the current generate_links setting
+                })
                 st.success("成功生成更多关键词！")
-
-    return new_keywords
 
 def generate_article(keyword, command, language, model):
     prompt = f"关键词: {keyword}\n命令: {command}\n语言: {language}"
@@ -301,15 +317,15 @@ def analysis_generation_page():
 
     # 展示生成的内容和关键词
     for round_idx, round_data in enumerate(st.session_state.analysis_rounds):
-        if round_data['type'] == 'keywords':
+        if round_data['type'] == 'article':
+            st.subheader(f"分析文章：第 {round_idx + 1} 轮")
+            st.write(round_data['content'])
+        elif round_data['type'] == 'keywords':
             st.subheader(f"第 {round_idx + 1} 轮生成的关键词")
             display_analysis_keywords(
                 round_data['content'], selected_language, selected_text_model,
                 round_idx, round_data['generate_links']
             )
-        elif round_data['type'] == 'article':
-            st.subheader(f"分析文章：第 {round_idx + 1} 轮")
-            st.write(round_data['content'])
 
 
 
