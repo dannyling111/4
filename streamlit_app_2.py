@@ -32,12 +32,48 @@ genai.configure(api_key=gemini_api_key)
 gemini_bots = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-1.0-pro"]
 text_bots = gemini_bots + ["GPT-3.5-Turbo", "GPT-4", "Claude-3-Opus"]
 
-# Load the Excel file
+# Load the Excel file (replace the file path with your .xlsx file)
 xlsx_path = "aisetting.xlsx"  # Ensure the correct path to your Excel file
 aisettings_df = pd.read_excel(xlsx_path)
 
 # Extract language options
 language_options = aisettings_df['a1'].dropna().tolist()
+
+# General-purpose functions
+
+def get_google_trends():
+    pytrends = TrendReq(hl='en-US', tz=360)
+    countries = ['united_states', 'japan', 'hong_kong', 'united_kingdom', 'taiwan', 'india', 'singapore', 'australia']
+    trends_list = []
+    for country in countries:
+        trends = pytrends.trending_searches(pn=country)
+        trends_list.extend(trends.values.tolist())
+    return [item[0].strip() for item in trends_list]
+
+def generate_wordcloud(keywords):
+    font_path = 'NotoSansCJK-Regular.ttc'  # Update to your font path
+    wordcloud = WordCloud(
+        font_path=font_path,
+        width=1600, 
+        height=1600, 
+        background_color="white",
+        color_func=muted_color_func
+    ).generate_from_frequencies(Counter(keywords))
+
+    plt.figure(figsize=(10, 10), dpi=100)
+    plt.imshow(wordcloud, interpolation='bilinear')
+    plt.axis("off")
+
+    buf = BytesIO()
+    plt.savefig(buf, format="png")
+    buf.seek(0)
+    return buf, wordcloud.words_
+
+def muted_color_func(word, font_size, position, orientation, random_state=None, **kwargs):
+    h = random.randint(180, 360)
+    s = random.randint(50, 80)
+    l = random.randint(40, 50)
+    return f"hsl({h}, {s}%, {l}%)"
 
 # Functions used in Analysis Generation
 
@@ -62,9 +98,102 @@ def generate_keywords_and_links(input_text, language, model, fixed_prompt_append
             st.error(f"Error processing keywords: {str(e)}")
             return []
 
+def display_analysis_keywords(keywords, selected_language, selected_text_model, round_idx, generate_links):
+    # 定义每一轮的颜色，用于分隔不同轮次的关键词
+    round_colors = ["#AED6F1", "#A9DFBF", "#F5B7B1", "#F9E79F", "#D7BDE2"]
+    selected_color = round_colors[round_idx % len(round_colors)]  # 根据轮次循环选择颜色
+
+    # 获取命令和模板的选项
+    a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
+    fixed_prompt_options_a6 = ['请选择模板'] + aisettings_df['a6'].dropna().tolist()
+
+    for idx, keyword in enumerate(keywords):
+        # 使用动态颜色设置背景和边框样式
+        container_style = f"""
+            <div style="
+                background-color: {selected_color};
+                padding: 10px;
+                margin-bottom: 10px;
+                border-radius: 8px;
+                border: 1px solid #d0d0d0;">
+        """
+
+        # 渲染样式容器
+        st.markdown(container_style, unsafe_allow_html=True)
+
+        # 使用 Streamlit 的列布局展示关键词和选项
+        col1, col2 = st.columns([3, 2])  # 两列布局：关键词 | 下拉菜单
+
+        with col1:
+            st.markdown(f"**{keyword}**")
+            if generate_links:
+                encoded_keyword = urllib.parse.quote(keyword)
+                google_search = f"https://www.google.com/search?q={encoded_keyword}"
+                youtube_search = f"https://www.youtube.com/results?search_query={encoded_keyword}"
+                bilibili_search = f"https://search.bilibili.com/all?keyword={encoded_keyword}"
+                st.markdown(f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})")
+
+        with col2:
+            # 命令选择下拉菜单
+            select_a7_key = f"a7_template_select_{round_idx}_{idx}"
+            selected_a7_option = st.selectbox("选择命令", a7_options, key=select_a7_key)
+
+            prev_select_a7_key = f"prev_{select_a7_key}"
+            if prev_select_a7_key not in st.session_state:
+                st.session_state[prev_select_a7_key] = a7_options[0]
+
+            if selected_a7_option != st.session_state[prev_select_a7_key]:
+                st.session_state[prev_select_a7_key] = selected_a7_option
+                if selected_a7_option != '请选择命令':
+                    handle_selection(keyword, selected_a7_option, '请选择模板', selected_language, selected_text_model, generate_links)
+
+            # 模板选择下拉菜单
+            select_fixed_prompt_key = f"fixed_prompt_select_{round_idx}_{idx}"
+            selected_fixed_prompt = st.selectbox("选择模板", fixed_prompt_options_a6, key=select_fixed_prompt_key)
+
+            prev_select_fixed_prompt_key = f"prev_{select_fixed_prompt_key}"
+            if prev_select_fixed_prompt_key not in st.session_state:
+                st.session_state[prev_select_fixed_prompt_key] = fixed_prompt_options_a6[0]
+
+            if selected_fixed_prompt != st.session_state[prev_select_fixed_prompt_key]:
+                st.session_state[prev_select_fixed_prompt_key] = selected_fixed_prompt
+                if selected_fixed_prompt != '请选择模板':
+                    handle_selection(keyword, '请选择命令', selected_fixed_prompt, selected_language, selected_text_model, generate_links)
+
+        # 关闭容器
+        st.markdown("</div>", unsafe_allow_html=True)
+
+
+
+
+def handle_selection(keyword, a7_option, fixed_prompt, language, model, generate_links):
+    # If an a7 option is selected, generate an article
+    if a7_option != '请选择命令':
+        with st.spinner(f"生成关于 {keyword} 的文章..."):
+            article = generate_article(keyword, a7_option, language, model)
+            if article:
+                st.session_state.analysis_rounds.append({
+                    'type': 'article',
+                    'content': article
+                })
+                st.success(f"成功生成关于 {keyword} 的文章！")
+
+    # If a fixed prompt is selected, generate more keywords
+    if fixed_prompt != '请选择模板':
+        with st.spinner(f"根据模板 {fixed_prompt} 生成更多关键词..."):
+            new_keywords = generate_keywords_and_links(keyword, language, model, fixed_prompt)
+            if new_keywords:
+                st.session_state.analysis_rounds.append({
+                    'type': 'keywords',
+                    'content': new_keywords,
+                    'generate_links': generate_links  # Use the current generate_links setting
+                })
+                st.success("成功生成更多关键词！")
+
 def generate_article(keyword, command, language, model):
     prompt = f"关键词: {keyword}\n命令: {command}\n语言: {language}"
     return fetch_text_response(prompt, model)
+
 
 def fetch_text_response(prompt, model):
     async def fetch():
@@ -77,41 +206,7 @@ def fetch_text_response(prompt, model):
 
     return asyncio.run(fetch())
 
-def get_google_trends():
-    pytrends = TrendReq(hl='en-US', tz=360)
-    countries = ['united_states', 'japan', 'hong_kong', 'united_kingdom', 'taiwan', 'india', 'singapore', 'australia']
-    trends_list = []
-    for country in countries:
-        trends = pytrends.trending_searches(pn=country)
-        trends_list.extend(trends.values.tolist())
-    return [item[0].strip() for item in trends_list]
-
-def generate_wordcloud(keywords):
-    font_path = 'NotoSansCJK-Regular.ttc'  # Update to your font path
-    wordcloud = WordCloud(
-        font_path=font_path,
-        width=1600,
-        height=1600,
-        background_color="white",
-        color_func=muted_color_func
-    ).generate_from_frequencies(Counter(keywords))
-
-    plt.figure(figsize=(10, 10), dpi=100)
-    plt.imshow(wordcloud, interpolation='bilinear')
-    plt.axis("off")
-
-    buf = BytesIO()
-    plt.savefig(buf, format="png")
-    buf.seek(0)
-    plt.close()  # Close the figure to free memory
-    return buf, wordcloud.words_
-
-def muted_color_func(word, font_size, position, orientation, random_state=None, **kwargs):
-    h = random.randint(180, 360)
-    s = random.randint(50, 80)
-    l = random.randint(40, 50)
-    return f"hsl({h}, {s}%, {l}%)"
-
+# Page Block: Word Cloud Generation
 def wordcloud_generation_page():
     st.header("生成 Google Trends 词云")
     if st.button("生成词云"):
@@ -124,186 +219,118 @@ def wordcloud_generation_page():
             sorted_keywords = sorted(keyword_frequencies.items(), key=lambda x: x[1], reverse=True)[:20]
             st.subheader("关键词搜索链接")
             for keyword, _ in sorted_keywords:
-                encoded_keyword = urllib.parse.quote(keyword)
+                encoded_keyword = urllib.parse.quote(keyword)  # URL-encode the keyword
                 google_search_link = f"https://www.google.com/search?q={encoded_keyword}"
                 google_news_link = f"https://news.google.com/search?q={encoded_keyword}"
                 youtube_link = f"https://www.youtube.com/results?search_query={encoded_keyword}"
                 st.markdown(f"- {keyword}: [Google Search]({google_search_link}) | [Google News]({google_news_link}) | [YouTube]({youtube_link})")
 
-def handle_selection(keyword, a7_option, fixed_prompt, language, model, generate_links):
-    # Ensure 'analysis_rounds' is initialized
-    if 'analysis_rounds' not in st.session_state or not isinstance(st.session_state.analysis_rounds, dict):
-        st.session_state.analysis_rounds = {}
-
-    # If a command is selected, generate an article
-    if a7_option != '请选择命令':
-        with st.spinner(f"生成关于 {keyword} 的文章..."):
-            article = generate_article(keyword, a7_option, language, model)
-            if article:
-                if keyword not in st.session_state.analysis_rounds:
-                    st.session_state.analysis_rounds[keyword] = {'articles': [], 'keywords': [], 'generate_links': generate_links}
-                st.session_state.analysis_rounds[keyword]['articles'].append(article)
-                st.success(f"成功生成关于 {keyword} 的文章！")
-
-    # If a fixed prompt is selected, generate more keywords
-    if fixed_prompt != '请选择模板':
-        with st.spinner(f"根据模板 {fixed_prompt} 生成更多关键词..."):
-            new_keywords = generate_keywords_and_links(keyword, language, model, fixed_prompt)
-            if new_keywords:
-                if keyword not in st.session_state.analysis_rounds:
-                    st.session_state.analysis_rounds[keyword] = {'articles': [], 'keywords': [], 'generate_links': generate_links}
-                st.session_state.analysis_rounds[keyword]['keywords'].extend(new_keywords)
-                st.success("成功生成更多关键词！")
-
-def display_analysis_keywords(keywords, selected_language, selected_text_model, round_idx, generate_links):
-    # Define colors
-    round_colors = ["#AED6F1", "#A9DFBF", "#F5B7B1", "#F9E79F", "#D7BDE2"]
-    selected_color = round_colors[round_idx % len(round_colors)]
-
-    # Get command and template options
-    a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
-    fixed_prompt_options_a6 = ['请选择模板'] + aisettings_df['a6'].dropna().tolist()
-
-    for idx, keyword in enumerate(keywords):
-        # Use container style
-        container_style = f"""
-            <div style="
-                background-color: {selected_color};
-                padding: 10px;
-                margin-bottom: 10px;
-                border-radius: 8px;
-                border: 1px solid #d0d0d0;">
-        """
-        st.markdown(container_style, unsafe_allow_html=True)
-
-        col1, col2 = st.columns([3, 2])
-
-        with col1:
-            # Display keyword and related links
-            st.markdown(f"**{keyword}**")
-            if generate_links:
-                encoded_keyword = urllib.parse.quote(keyword)
-                google_search = f"https://www.google.com/search?q={encoded_keyword}"
-                youtube_search = f"https://www.youtube.com/results?search_query={encoded_keyword}"
-                bilibili_search = f"https://search.bilibili.com/all?keyword={encoded_keyword}"
-                st.markdown(f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})")
-
-            # Check if the keyword is in 'analysis_rounds'
-            if 'analysis_rounds' in st.session_state and keyword in st.session_state.analysis_rounds:
-                # Display related articles
-                for article in st.session_state.analysis_rounds[keyword].get('articles', []):
-                    st.write(article)
-
-                # Display new keywords
-                sub_keywords = st.session_state.analysis_rounds[keyword].get('keywords', [])
-                if sub_keywords:
-                    st.markdown("**生成的新关键词：**")
-                    for new_keyword in sub_keywords:
-                        st.markdown(f"- {new_keyword}")
-
-        with col2:
-            # Command selection dropdown
-            select_a7_key = f"a7_template_select_{round_idx}_{idx}"
-            selected_a7_option = st.selectbox("选择命令", a7_options, key=select_a7_key)
-
-            # Handle command selection
-            if selected_a7_option != '请选择命令':
-                handle_selection(keyword, selected_a7_option, '请选择模板', selected_language, selected_text_model, generate_links)
-                st.rerun()
-
-            # Fixed prompt selection dropdown
-            select_fixed_prompt_key = f"fixed_prompt_select_{round_idx}_{idx}"
-            selected_fixed_prompt = st.selectbox("选择模板", fixed_prompt_options_a6, key=select_fixed_prompt_key)
-
-            # Handle fixed prompt selection
-            if selected_fixed_prompt != '请选择模板':
-                handle_selection(keyword, '请选择命令', selected_fixed_prompt, selected_language, selected_text_model, generate_links)
-                st.rerun()
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
 def analysis_generation_page():
     st.header("主题分析生成")
 
-    # Ensure 'analysis_rounds' is initialized
-    if 'analysis_rounds' not in st.session_state or not isinstance(st.session_state.analysis_rounds, dict):
-        st.session_state.analysis_rounds = {}
+    # 初始化 session_state
+    if 'input_text_prompt_analysis' not in st.session_state:
+        st.session_state.input_text_prompt_analysis = ''
+    if 'selected_command' not in st.session_state:
+        st.session_state.selected_command = None  # 初始化命令选择状态
+    if 'selected_template' not in st.session_state:
+        st.session_state.selected_template = None  # 初始化模板选择状态
+    if 'analysis_rounds' not in st.session_state:
+        st.session_state.analysis_rounds = []
 
-    # Input text prompt
+    # 输入框
     input_text_prompt_analysis = st.text_input(
-        "请输入文本生成提示词", key='input_text_prompt_analysis'
+        "请输入文本生成提示词", value=st.session_state.input_text_prompt_analysis
     )
 
-    selected_language = st.selectbox("选择语言", language_options, key='selected_language')
-    selected_text_model = st.selectbox("选择文本生成模型", text_bots, key='selected_text_model')
+    # 语言和文本模型选择
+    selected_language = st.selectbox("选择语言", language_options)
+    selected_text_model = st.selectbox("选择文本生成模型", text_bots)
 
+    # 命令选择 Dropdown
     a7_options = ['请选择命令'] + aisettings_df['a7'].dropna().tolist()
-    selected_command = st.selectbox("选择命令", a7_options, key='selected_command')
+    st.session_state.selected_command = st.selectbox(
+        "选择命令", a7_options, index=0  # 默认显示为“请选择命令”
+    )
 
+    # 关键词生成模板 Dropdown
     fixed_prompt_options_a6 = ['请选择模板'] + aisettings_df['a6'].dropna().tolist()
-    selected_template = st.selectbox("选择关键词生成模板", fixed_prompt_options_a6, key='selected_template')
+    st.session_state.selected_template = st.selectbox(
+        "选择关键词生成模板", fixed_prompt_options_a6, index=0
+    )
 
-    generate_links = st.checkbox("是否生成关键词相关的搜索链接", value=True, key='generate_links')
+    # 是否生成关键词相关链接的 Checkbox
+    generate_links = st.checkbox("是否生成关键词相关的搜索链接", value=True)
 
+    # 按钮：生成内容
     if st.button("生成内容"):
-        content_generated = False
+        content_generated = False  # 标记是否有内容生成
 
-        if selected_command != '请选择命令':
-            with st.spinner(f"正在生成关于命令 '{selected_command}' 的内容..."):
+        # 如果选择了命令，则生成文章内容
+        if (st.session_state.selected_command and 
+            st.session_state.selected_command != '请选择命令'):
+            with st.spinner(f"正在生成关于命令 '{st.session_state.selected_command}' 的内容..."):
                 article = generate_article(
                     input_text_prompt_analysis,
-                    selected_command,
+                    st.session_state.selected_command,
                     selected_language,
                     selected_text_model
                 )
                 if article:
-                    if input_text_prompt_analysis not in st.session_state.analysis_rounds:
-                        st.session_state.analysis_rounds[input_text_prompt_analysis] = {'articles': [], 'keywords': [], 'generate_links': generate_links}
-                    st.session_state.analysis_rounds[input_text_prompt_analysis]['articles'].append(article)
+                    st.session_state.analysis_rounds.append({
+                        'type': 'article',
+                        'content': article
+                    })
                     st.success("命令内容生成成功！")
                     content_generated = True
 
-        if selected_template != '请选择模板':
-            with st.spinner(f"根据模板 '{selected_template}' 生成关键词..."):
+        # 如果选择了模板，则生成关键词内容
+        if (st.session_state.selected_template and 
+            st.session_state.selected_template != '请选择模板'):
+            with st.spinner(f"根据模板 '{st.session_state.selected_template}' 生成关键词..."):
                 new_keywords = generate_keywords_and_links(
                     input_text_prompt_analysis,
                     selected_language,
                     selected_text_model,
-                    selected_template
+                    st.session_state.selected_template
                 )
                 if new_keywords:
-                    if input_text_prompt_analysis not in st.session_state.analysis_rounds:
-                        st.session_state.analysis_rounds[input_text_prompt_analysis] = {'articles': [], 'keywords': [], 'generate_links': generate_links}
-                    st.session_state.analysis_rounds[input_text_prompt_analysis]['keywords'].extend(new_keywords)
+                    st.session_state.analysis_rounds.append({
+                        'type': 'keywords',
+                        'content': new_keywords,
+                        'generate_links': generate_links  # 记录链接生成设置
+                    })
                     st.success("关键词内容生成成功！")
                     content_generated = True
 
+        # 如果没有生成任何内容，显示警告
         if not content_generated:
             st.warning("请确保至少选择一个命令或模板。")
 
+    # 按钮：清除结果
     if st.button("清除结果"):
-        st.session_state.analysis_rounds = {}
+        st.session_state.analysis_rounds = []
         st.session_state.input_text_prompt_analysis = ''
-        st.session_state.selected_command = '请选择命令'
-        st.session_state.selected_template = '请选择模板'
+        st.session_state.selected_command = None
+        st.session_state.selected_template = None
         st.success("所有结果已清除！")
-        st.rerun()
 
-    # Ensure 'analysis_rounds' is a non-empty dictionary
-    if st.session_state.analysis_rounds:
-        for round_idx, (keyword, round_data) in enumerate(st.session_state.analysis_rounds.items()):
-            if round_data.get('articles'):
-                st.subheader(f"分析文章：关于关键词 '{keyword}'")
-                for article in round_data.get('articles', []):
-                    st.write(article)
+    # 展示生成的内容和关键词
+    for round_idx, round_data in enumerate(st.session_state.analysis_rounds):
+        if round_data['type'] == 'article':
+            st.subheader(f"分析文章：第 {round_idx + 1} 轮")
+            st.write(round_data['content'])
+        elif round_data['type'] == 'keywords':
+            st.subheader(f"第 {round_idx + 1} 轮生成的关键词")
+            display_analysis_keywords(
+                round_data['content'], selected_language, selected_text_model,
+                round_idx, round_data['generate_links']
+            )
 
-            if round_data.get('keywords'):
-                st.subheader(f"关于关键词 '{keyword}' 生成的关键词")
-                display_analysis_keywords(
-                    round_data['keywords'], st.session_state.selected_language, st.session_state.selected_text_model,
-                    round_idx, round_data.get('generate_links', True)
-                )
 
+
+
+# Page Block: Excel File Reading and Editing
 def excel_page():
     st.header("Excel 文件读取与编辑")
 
@@ -312,7 +339,7 @@ def excel_page():
 
     try:
         # Read all sheets from the Excel file
-        df = pd.read_excel(xlsx_path, sheet_name=None)
+        df = pd.read_excel(xlsx_path, sheet_name=None)  
         sheet_names = list(df.keys())  # Get all sheet names
         selected_sheet = st.selectbox("选择工作表", sheet_names)  # Select sheet
 
@@ -321,7 +348,7 @@ def excel_page():
         st.write(f"**当前显示的表：{selected_sheet}**")
 
         # Display editable table
-        edited_data = st.data_editor(data, use_container_width=True)
+        edited_data = st.data_editor(data, use_container_width=True)  # Use st.data_editor
 
         # Button to save edited content
         if st.button("保存编辑后的文件"):
@@ -349,5 +376,6 @@ def main():
     elif page == "Excel":
         excel_page()
 
+# Run the app
 if __name__ == "__main__":
     main()
