@@ -188,14 +188,15 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                 bilibili_search = f"https://search.bilibili.com/all?keyword={encoded_keyword}"
                 st.markdown(f"[Google]({google_search}) | [YouTube]({youtube_search}) | [Bilibili]({bilibili_search})")
 
-            # 展示与关键词相关的文章
+            # 检查该关键词是否在 st.session_state.analysis_rounds 中
             if keyword in st.session_state.analysis_rounds:
-                for article in st.session_state.analysis_rounds[keyword]['articles']:
+                # 展示与关键词相关的文章
+                for article in st.session_state.analysis_rounds[keyword].get('articles', []):
                     st.write(article)
 
-            # 展示与关键词相关的新关键词
-            for new_keyword in st.session_state.analysis_rounds[keyword]['keywords']:
-                st.markdown(f"- {new_keyword}")
+                # 展示与关键词相关的新关键词
+                for new_keyword in st.session_state.analysis_rounds[keyword].get('keywords', []):
+                    st.markdown(f"- {new_keyword}")
 
         with col2:
             # 命令选择下拉菜单
@@ -225,6 +226,7 @@ def display_analysis_keywords(keywords, selected_language, selected_text_model, 
                     handle_selection(keyword, '请选择命令', selected_fixed_prompt, selected_language, selected_text_model, generate_links)
 
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 def analysis_generation_page():
     st.header("主题分析生成")
