@@ -367,7 +367,7 @@ def excel_page():
 
 def main():
     st.sidebar.title("导航")
-    page = st.sidebar.selectbox("选择页面", ["词云生成", "主题分析生成", "Excel"])
+    page = st.sidebar.selectbox("选择页面", ["主题分析生成", "词云生成", "Excel"])
 
     if page == "词云生成":
         wordcloud_generation_page()
