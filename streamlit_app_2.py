@@ -330,51 +330,17 @@ def analysis_generation_page():
 
 
 
-# Page Block: Excel File Reading and Editing
-def excel_page():
-    st.header("Excel 文件读取与编辑")
 
-    # Excel file path (fixed path)
-    xlsx_path = "aisetting.xlsx"
-
-    try:
-        # Read all sheets from the Excel file
-        df = pd.read_excel(xlsx_path, sheet_name=None)  
-        sheet_names = list(df.keys())  # Get all sheet names
-        selected_sheet = st.selectbox("选择工作表", sheet_names)  # Select sheet
-
-        # Get data from the current sheet
-        data = df[selected_sheet]
-        st.write(f"**当前显示的表：{selected_sheet}**")
-
-        # Display editable table
-        edited_data = st.data_editor(data, use_container_width=True)  # Use st.data_editor
-
-        # Button to save edited content
-        if st.button("保存编辑后的文件"):
-            with pd.ExcelWriter(xlsx_path, engine='openpyxl') as writer:
-                # Iterate over all sheets and save edited content
-                for sheet_name, sheet_data in df.items():
-                    if sheet_name == selected_sheet:
-                        edited_data.to_excel(writer, index=False, sheet_name=sheet_name)  # Save edited data
-                    else:
-                        sheet_data.to_excel(writer, index=False, sheet_name=sheet_name)  # Retain unedited data
-
-            st.success(f"已成功保存编辑后的内容到 {xlsx_path}")
-
-    except Exception as e:
-        st.error(f"读取或保存 Excel 文件时出错: {e}")
 
 def main():
     st.sidebar.title("导航")
-    page = st.sidebar.selectbox("选择页面", ["主题分析生成", "词云生成", "Excel"])
+    page = st.sidebar.selectbox("选择页面", ["主题分析生成", "词云生成"])
 
     if page == "词云生成":
         wordcloud_generation_page()
     elif page == "主题分析生成":
         analysis_generation_page()
-    elif page == "Excel":
-        excel_page()
+
 
 # Run the app
 if __name__ == "__main__":
